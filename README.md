@@ -31,7 +31,7 @@ Rough costs as of Jan 2024:
 | 50,000 words (average novel)     | $3.75          | Approximate average book length   |
 | 100,000 words                    | $7.50          | Long novel, comprehensive guide   |
 | 200,000 words                    | $15.00         | Epic novel, extensive research    |
-|----------------------------------|----------------|-----------------------------------|
+
 
 | Number of Characters | Estimated Cost | Context                            |
 |----------------------|----------------|------------------------------------|
@@ -44,7 +44,7 @@ Rough costs as of Jan 2024:
 | 250,000              | $3.75          | Novella, academic thesis           |
 | 500,000              | $7.50          | Full-length novel, extensive guide |
 | 1,000,000            | $15.00         | Epic novel, in-depth analysis      |
-|----------------------------------|----------------|------------------------|
+
 
 **Example**: Converting "Fuzzing The Machine" (240 pages) cost approximately $5.50. 📘💰
 
