@@ -18,13 +18,33 @@ Say goodbye to expensive subscriptions on shitty sites, crappy TTS, and other ju
 ## Pricing
 Simple, pay-per-use pricing (provided by OpenAI API):
 
-Costs as of Jan 2024:
-| Text Length                 | Estimated Cost |
-|-----------------------------|----------------|
-| 1,000 words                 | $0.15          |
-| 10,000 words                | $1.50          |
-| 50,000 words (average book) | $7.50          |
-| 100,000 words               | $15.00         |
+Rough costs as of Jan 2024:
+| Text Length                      | Estimated Cost | Context                           |
+|----------------------------------|----------------|-----------------------------------|
+| 250 words                        | $0.01875       | Average email                     |
+| 500 words                        | $0.0375        | Average letter                    |
+| 1,000 words                      | $0.075         | Blog post, short article          |
+| 2,500 words                      | $0.1875        | Long article, short report        |
+| 5,000 words                      | $0.375         | Research paper, short story       |
+| 10,000 words                     | $0.75          | Long story, small e-book          |
+| 25,000 words                     | $1.875         | Novella, thesis                   |
+| 50,000 words (average novel)     | $3.75          | Approximate average book length   |
+| 100,000 words                    | $7.50          | Long novel, comprehensive guide   |
+| 200,000 words                    | $15.00         | Epic novel, extensive research    |
+|----------------------------------|----------------|-----------------------------------|
+
+| Number of Characters | Estimated Cost | Context                            |
+|----------------------|----------------|------------------------------------|
+| 1,000                | $0.015         | Short email, brief memo            |
+| 5,000                | $0.075         | Average email, short article       |
+| 10,000               | $0.15          | Detailed report, newsletter        |
+| 25,000               | $0.375         | Long article, short story          |
+| 50,000               | $0.75          | Extensive report, small e-book     |
+| 100,000              | $1.50          | Comprehensive guide, long story    |
+| 250,000              | $3.75          | Novella, academic thesis           |
+| 500,000              | $7.50          | Full-length novel, extensive guide |
+| 1,000,000            | $15.00         | Epic novel, in-depth analysis      |
+|----------------------------------|----------------|------------------------|
 
 **Example**: Converting "Fuzzing The Machine" (240 pages) cost approximately $5.50. 📘💰
 
