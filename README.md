@@ -56,9 +56,10 @@ Distributed under the MIT License. See `LICENSE`.
 Don't.
 
 ## Badges
-```markdown
-![GitHub stars](https://img.shields.io/github/stars/wowitsjack/AI-Audiobook-Maker?style=social)
-![GitHub forks](https://img.shields.io/github/forks/wowitsjack/AI-Audiobook-Maker?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/wowitsjack/AI-Audiobook-Maker?style=social)
-![GitHub followers](https://img.shields.io/github/followers/wowitsjack?style=social)
-```
+## Badges
+
+[![GitHub stars](https://img.shields.io/github/stars/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Star)](https://github.com/wowitsjack/AI-Audiobook-Maker)
+[![GitHub forks](https://img.shields.io/github/forks/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Fork)](https://github.com/wowitsjack/AI-Audiobook-Maker/fork)
+[![GitHub watchers](https://img.shields.io/github/watchers/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Watch)](https://github.com/wowitsjack/AI-Audiobook-Maker)
+[![GitHub followers](https://img.shields.io/github/followers/wowitsjack.svg?style=social&label=Follow)](https://github.com/wowitsjack)
+
