@@ -68,6 +68,8 @@ cd AI-Audiobook-Maker
 - `ffmpeg`: For audio file processing.
 - `ospeak`: OpenAI's text-to-speech CLI tool.
 
+![Image 1](images/preview.png)
+
 ## Contributing
 Contributions make the open-source community thrive. Your contributions are **deeply appreciated**.
 
