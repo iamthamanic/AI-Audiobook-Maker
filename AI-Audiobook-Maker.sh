@@ -3,23 +3,37 @@
 # Function to check and install missing dependencies
 check_install_dependency() {
     local dep=$1
-    if ! command -v $dep &> /dev/null; then
-        read -p "Dependency $dep is missing. Would you like to install it? (y/n): " choice
-        if [ "$choice" = "y" ]; then
-            sudo apt-get install $dep
-        else
-            echo "Dependency $dep is not installed. Exiting."
-            exit 1
+    local package_manager=$2
+    if [ "$dep" = "ospeak" ]; then
+        if ! python3 -c "import ospeak" &> /dev/null; then
+            read -p "Dependency $dep is missing. Would you like to install it using pip3? (y/n): " choice
+            if [ "$choice" = "y" ]; then
+                sudo pip3 install ospeak
+            else
+                echo "Dependency $dep is not installed. Exiting."
+                exit 1
+            fi
+        fi
+    else
+        if ! command -v $dep &> /dev/null; then
+            read -p "Dependency $dep is missing. Would you like to install it? (y/n): " choice
+            if [ "$choice" = "y" ]; then
+                sudo $package_manager install $dep
+            else
+                echo "Dependency $dep is not installed. Exiting."
+                exit 1
+            fi
         fi
     fi
 }
 
 # Check for dependencies
-check_install_dependency "dialog"
-check_install_dependency "lolcat"
-check_install_dependency "ffmpeg"
-check_install_dependency "bc"
-check_install_dependency "ospeak" # Adjust as needed for your system
+check_install_dependency "dialog" "apt-get"
+check_install_dependency "lolcat" "apt-get"
+check_install_dependency "ffmpeg" "apt-get"
+check_install_dependency "bc" "apt-get"
+check_install_dependency "ospeak" "pip3"
+
 
 
 # Function to exit if user presses 'Cancel' on the final confirmation
