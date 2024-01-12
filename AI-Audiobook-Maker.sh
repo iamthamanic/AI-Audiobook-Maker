@@ -1,41 +1,3 @@
-#!/bin/bash
-
-# Function to check and install missing dependencies
-check_install_dependency() {
-    local dep=$1
-    local package_manager=$2
-    if [ "$dep" = "ospeak" ]; then
-        if ! python3 -c "import ospeak" &> /dev/null; then
-            read -p "Dependency $dep is missing. Would you like to install it using pip3? (y/n): " choice
-            if [ "$choice" = "y" ]; then
-                sudo pip3 install ospeak
-            else
-                echo "Dependency $dep is not installed. Exiting."
-                exit 1
-            fi
-        fi
-    else
-        if ! command -v $dep &> /dev/null; then
-            read -p "Dependency $dep is missing. Would you like to install it? (y/n): " choice
-            if [ "$choice" = "y" ]; then
-                sudo $package_manager install $dep
-            else
-                echo "Dependency $dep is not installed. Exiting."
-                exit 1
-            fi
-        fi
-    fi
-}
-
-# Check for dependencies
-check_install_dependency "dialog" "apt-get"
-check_install_dependency "lolcat" "apt-get"
-check_install_dependency "ffmpeg" "apt-get"
-check_install_dependency "bc" "apt-get"
-check_install_dependency "ospeak" "pip3"
-
-
-
 # Function to exit if user presses 'Cancel' on the final confirmation
 handle_cancel() {
     exit_status=$?
@@ -47,7 +9,7 @@ handle_cancel() {
 
 # Function to handle the SIGINT signal (Ctrl-C)
 handle_sigint() {
-clear
+    clear
     echo -e "\n\n👋 Goodbye! Thank you for using AI-Audiobook-Maker. Have a great day! 🌟\n"
     exit
 }
@@ -87,7 +49,6 @@ split_text_file() {
             buffer_len=$(( buffer_len + 2 ))
         else
             if (( buffer_len + ${#line} + 1 > max_length )); then
-                # Find the last period in the buffer
                 local last_period_pos=$(echo "$buffer" | grep -o '\.\(.*\)' | tail -1 | wc -c)
                 local split_pos=$(( ${#buffer} - last_period_pos + 1 ))
                 if [[ $split_pos -gt 1 ]]; then
@@ -124,11 +85,38 @@ show_welcome_screen() {
 # Call the welcome screen function at the beginning of the script
 show_welcome_screen
 
-# Ask for input file
+# Ask if the user wants to process a PDF file
 exec 3>&1
-INPUT_FILE=$(dialog --title "Input File 📄" --inputbox "Enter the path to the input file (default: input.txt):" 8 50 "input.txt" 2>&1 1>&3)
+PROCESS_PDF=$(dialog --title "Process PDF?" --yesno "Do you want to process a PDF file?" 10 50 2>&1 1>&3)
+pdf_response=$?
 exec 3>&-
-dialog --title "Confirmation ✅" --msgbox "Input file set to '$INPUT_FILE' 🗂️" 6 50
+
+# Check response for processing PDF
+if [ $pdf_response -eq 0 ]; then
+    # Ask for the path to the PDF file
+    exec 3>&1
+    PDF_FILE=$(dialog --title "PDF File 📄" --inputbox "Enter the path to the PDF file:" 8 50 2>&1 1>&3)
+    exec 3>&-
+
+    # Check if the PDF file exists
+    if [ ! -f "$PDF_FILE" ]; then
+        dialog --title "File Not Found ❌" --msgbox "The PDF file '$PDF_FILE' was not found. Please place the file in the directory and run the script again." 10 50
+        exit 1
+    fi
+
+    dialog --title "Confirmation ✅" --msgbox "PDF file set to '$PDF_FILE' 🗂️" 6 50
+    # Convert PDF to text and split the text (the function needs to be defined)
+    convert_pdf_to_text_and_split "$PDF_FILE" "output_txt"
+    INPUT_FILE="output_txt/full_text.txt"
+else
+    # Ask for input file
+    exec 3>&1
+    INPUT_FILE=$(dialog --title "Input File 📄" --inputbox "Enter the path to the input file (default: input.txt):" 8 50 "input.txt" 2>&1 1>&3)
+    exec 3>&-
+
+    dialog --title "Confirmation ✅" --msgbox "Input file set to '$INPUT_FILE' 🗂️" 6 50
+    split_text_file "$INPUT_FILE" 4000 "part_"
+fi
 
 # Check for OPENAI_API_KEY
 if [ -z "${OPENAI_API_KEY}" ]; then
