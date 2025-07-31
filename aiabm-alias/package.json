@@ -1,0 +1,37 @@
+{
+  "name": "aiabm",
+  "version": "2.0.1",
+  "description": "Alias package for ai-audiobook-maker - AI Audiobook Maker CLI",
+  "main": "index.js",
+  "bin": {
+    "aiabm": "./index.js"
+  },
+  "scripts": {
+    "postinstall": "echo 'This is an alias for ai-audiobook-maker. Installing the main package...'"
+  },
+  "keywords": [
+    "aiabm",
+    "ai-audiobook-maker",
+    "audiobook",
+    "tts",
+    "text-to-speech",
+    "openai",
+    "cli"
+  ],
+  "author": "AI Audiobook Maker",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamthamanic/AI-Audiobook-Maker"
+  },
+  "bugs": {
+    "url": "https://github.com/iamthamanic/AI-Audiobook-Maker/issues"
+  },
+  "homepage": "https://github.com/iamthamanic/AI-Audiobook-Maker#readme",
+  "dependencies": {
+    "ai-audiobook-maker": "^2.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
