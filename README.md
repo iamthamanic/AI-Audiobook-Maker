@@ -1,89 +1,222 @@
+# 🎧 AI Audiobook Maker (AIABM)
 
-# 📖 AI-Audiobook-Maker 🎧
+[![npm version](https://img.shields.io/npm/v/ai-audiobook-maker.svg)](https://www.npmjs.com/package/ai-audiobook-maker)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/node/v/ai-audiobook-maker.svg)](https://nodejs.org)
 
-## Introduction
-Welcome to the **AI-Audiobook-Maker**! 🚀 
+Transform your PDFs and text files into high-quality audiobooks using OpenAI's advanced Text-to-Speech technology. No installation required - just run with `npx`!
 
-This free tool transforms your books, textbooks, or any text document into fantastic sounding audiobooks using OpenAI's state-of-the-art TTS technology. 
+## ✨ Features
 
-Say goodbye to expensive subscriptions on shitty sites, crappy TTS, and other junk, and embrace the freedom of creating audiobooks on demand via API. 🌟
+- **🚀 Zero Installation**: Run directly with `npx ai-audiobook-maker`
+- **📁 Smart File Handling**: Supports PDF and TXT files with drag & drop
+- **🎤 Voice Preview**: Listen to all 6 OpenAI voices before choosing
+- **⏸️ Resume & Pause**: Continue interrupted conversions anytime
+- **🔐 Secure API Key Management**: Encrypted local storage
+- **📊 Progress Tracking**: Real-time conversion progress with estimates
+- **🎛️ Advanced Controls**: Adjust speed, quality, and output format
+- **💰 Cost Transparency**: See exact pricing before conversion
 
-## Features
-- 📘 **Versatile Text Conversion**: From books to articles, convert any text to audio.
-- 🎙️ **Diverse Voice Options**: A wide range of voices to suit your preference.
-- 🎚️ **Speed Customization**: Control the narration speed for optimal listening.
-- 📊 **Transparent and Affordable Pricing**: Pay as you go without hidden costs via OpenAI.
-- 🛠️ **Open Source and Customizable**: Freedom to modify and enhance.
+## 🚀 Quick Start
 
-## Pricing
-Simple, pay-per-use pricing (provided by OpenAI API):
-
-Rough costs as of Jan 2024:
-| Text Length                      | Estimated Cost | Context                           |
-|----------------------------------|----------------|-----------------------------------|
-| 250 words                        | $0.01875       | Average email                     |
-| 500 words                        | $0.0375        | Average letter                    |
-| 1,000 words                      | $0.075         | Blog post, short article          |
-| 2,500 words                      | $0.1875        | Long article, short report        |
-| 5,000 words                      | $0.375         | Research paper, short story       |
-| 10,000 words                     | $0.75          | Long story, small e-book          |
-| 25,000 words                     | $1.875         | Novella, thesis                   |
-| 50,000 words (average novel)     | $3.75          | Approximate average book length   |
-| 100,000 words                    | $7.50          | Long novel, comprehensive guide   |
-| 200,000 words                    | $15.00         | Epic novel, extensive research    |
-
-
-| Number of Characters | Estimated Cost | Context                            |
-|----------------------|----------------|------------------------------------|
-| 1,000                | $0.015         | Short email, brief memo            |
-| 5,000                | $0.075         | Average email, short article       |
-| 10,000               | $0.15          | Detailed report, newsletter        |
-| 25,000               | $0.375         | Long article, short story          |
-| 50,000               | $0.75          | Extensive report, small e-book     |
-| 100,000              | $1.50          | Comprehensive guide, long story    |
-| 250,000              | $3.75          | Novella, academic thesis           |
-| 500,000              | $7.50          | Full-length novel, extensive guide |
-| 1,000,000            | $15.00         | Epic novel, in-depth analysis      |
-
-
-**Example**: Converting "Fuzzing The Machine" (240 pages) cost approximately $5.50. 📘💰
-
-## How It Works
-1. **Prepare Your Text**: Have your text file ready.
-2. **Run the AI-Audiobook-Maker**: Follow the simple wizard.
-3. **Choose Settings**: Select voice and speed.
-4. **Convert**: Watch as your text becomes an audiobook.
-5. **Listen and Enjoy**: On your favorite device!
-
-## Getting Started
+### Method 1: Direct Usage (Recommended)
 ```bash
-git clone https://github.com/wowitsjack/AI-Audiobook-Maker.git
-cd AI-Audiobook-Maker
-./audiobook_maker.sh
+# Convert a specific file
+npx ai-audiobook-maker mybook.pdf
+
+# Interactive mode
+npx ai-audiobook-maker
 ```
 
-## Dependencies (The script ahould handle this, yo)
-- `dialog`: For user interface.
-- `lolcat`: For colorful terminal output.
-- `ffmpeg`: For audio file processing.
-- `ospeak`: OpenAI's text-to-speech CLI tool.
+### Method 2: Global Installation
+```bash
+npm install -g ai-audiobook-maker
+ai-audiobook-maker mybook.pdf
+```
 
-![Image 1](preview.jpg)
+## 📋 Prerequisites
 
-## Contributing
-Contributions make the open-source community thrive. Your contributions are **deeply appreciated**.
+- **Node.js 16+** (Download from [nodejs.org](https://nodejs.org/))
+- **OpenAI API Key** (Get from [platform.openai.com](https://platform.openai.com/account/api-keys))
+- **FFmpeg** (for audio combining - auto-installed on most systems)
 
-## License
-Distributed under the MIT License. See `LICENSE`.
+## 🎯 Usage Examples
 
-## Contact
-Don't.
+### CLI Mode
+```bash
+# Basic conversion
+npx ai-audiobook-maker document.pdf
 
-## Badges
-## Badges
+# With specific options
+npx ai-audiobook-maker book.txt --voice nova --speed 1.2 --model tts-1-hd
 
-[![GitHub stars](https://img.shields.io/github/stars/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Star)](https://github.com/wowitsjack/AI-Audiobook-Maker)
-[![GitHub forks](https://img.shields.io/github/forks/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Fork)](https://github.com/wowitsjack/AI-Audiobook-Maker/fork)
-[![GitHub watchers](https://img.shields.io/github/watchers/wowitsjack/AI-Audiobook-Maker.svg?style=social&label=Watch)](https://github.com/wowitsjack/AI-Audiobook-Maker)
-[![GitHub followers](https://img.shields.io/github/followers/wowitsjack.svg?style=social&label=Follow)](https://github.com/wowitsjack)
+# Manage API key
+npx ai-audiobook-maker --config
+```
 
+### Interactive Mode
+```bash
+npx ai-audiobook-maker
+```
+Then follow the interactive prompts to:
+1. Select your file (browse, drag & drop, or enter path)
+2. Preview and choose a voice
+3. Configure settings (speed, quality, output format)
+4. Monitor progress and resume if needed
+
+## 🎤 Available Voices
+
+- **Alloy**: Neutral, versatile
+- **Echo**: Clear, professional
+- **Fable**: Warm, storytelling
+- **Onyx**: Deep, authoritative  
+- **Nova**: Bright, engaging
+- **Shimmer**: Gentle, soothing
+
+## 💰 Pricing
+
+OpenAI TTS pricing: **$0.015 per 1,000 characters**
+
+| Content Length | Estimated Cost | Example |
+|----------------|----------------|---------|
+| 10,000 characters | ~$0.15 | Short article |
+| 50,000 characters | ~$0.75 | Small e-book |
+| 100,000 characters | ~$1.50 | Average novel |
+| 250,000 characters | ~$3.75 | Large book |
+
+## 🔧 Advanced Features
+
+### Resume Interrupted Conversions
+If conversion stops, simply run the tool again - it will automatically detect and offer to resume your previous session.
+
+### Multiple Output Formats
+- **Single File**: One complete audiobook MP3
+- **Chapter Files**: Separate MP3 per chunk
+- **Both**: Get both formats
+
+### Voice Preview Caching
+Voice previews are cached locally to save API costs and improve performance.
+
+### Smart Text Chunking
+- Respects sentence boundaries
+- Preserves chapter structure for PDFs
+- Configurable chunk sizes (default: 4000 characters)
+
+## 📂 File Support
+
+### PDF Files
+- ✅ Up to 50MB
+- ✅ Text extraction with structure preservation
+- ✅ Automatic chapter detection
+
+### Text Files  
+- ✅ Up to 1M characters
+- ✅ UTF-8 encoding
+- ✅ Automatic formatting cleanup
+
+## ⚙️ Configuration
+
+### API Key Storage
+Your OpenAI API key is encrypted and stored locally at:
+- **macOS/Linux**: `~/.config/ai-audiobook-maker/config.json`
+- **Windows**: `%APPDATA%\ai-audiobook-maker\config.json`
+
+### Cache Location
+Voice previews and temporary files:
+- **macOS/Linux**: `~/.config/ai-audiobook-maker/cache/`
+- **Windows**: `%APPDATA%\ai-audiobook-maker\cache\`
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+**"FFmpeg not found"**
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# Windows
+# Download from https://ffmpeg.org/download.html
+```
+
+**"API key invalid"**
+- Verify your key at [OpenAI Platform](https://platform.openai.com/account/api-keys)
+- Use `npx ai-audiobook-maker --config` to update your key
+
+**"File too large"**
+- PDFs: Maximum 50MB
+- Text: Maximum 1M characters
+- Split large files before conversion
+
+**Voice preview not playing**
+- macOS: Uses built-in `afplay`
+- Windows: Uses PowerShell media player
+- Linux: Requires `ffplay`, `mpv`, `vlc`, or `mplayer`
+
+### Performance Tips
+
+- Use `tts-1` model for faster processing
+- Use `tts-1-hd` for higher quality (slower)
+- Cache clears automatically after 30 days
+- Resume feature prevents re-processing completed chunks
+
+## 🔒 Privacy & Security
+
+- API keys are encrypted locally using AES-192
+- No data is sent to servers other than OpenAI
+- Cache files are stored locally only
+- Session data helps resume interrupted conversions
+
+## 📖 Examples
+
+### Converting a PDF Book
+```bash
+npx ai-audiobook-maker "My Great Novel.pdf"
+```
+
+### Interactive Voice Selection
+```bash
+npx ai-audiobook-maker
+# Select "Preview all voices"
+# Listen to each voice sample
+# Choose your favorite
+# Configure speed and quality
+# Start conversion
+```
+
+### Batch Processing Tips
+```bash
+# Process multiple files
+for file in *.pdf; do npx ai-audiobook-maker "$file" --voice nova --speed 1.1; done
+```
+
+## 🤝 Contributing
+
+Issues and feature requests welcome at: [GitHub Issues](https://github.com/iamthamanic/AI-Audiobook-Maker/issues)
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🙏 Acknowledgments
+
+- Built on OpenAI's TTS API
+- Inspired by the original bash script version
+- Uses FFmpeg for audio processing
+
+## 📝 Changelog
+
+### v2.0.0 (2025-07-31)
+- 🎨 Renamed package to `ai-audiobook-maker` for better npm discoverability
+- 📦 Improved package structure and metadata
+- 🔧 Added proper .gitignore and .npmignore files
+- 📄 Added MIT LICENSE file
+- 📚 Updated documentation and installation instructions
+- 🚀 Ready for npm publishing
+
+---
+
+**Happy listening! 🎧** Turn any text into your personal audiobook library.

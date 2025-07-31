@@ -1,0 +1,58 @@
+{
+  "name": "ai-audiobook-maker",
+  "version": "2.0.0",
+  "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS",
+  "main": "src/AudiobookMaker.js",
+  "bin": {
+    "ai-audiobook-maker": "./cli.js"
+  },
+  "scripts": {
+    "start": "node cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "audiobook",
+    "tts",
+    "text-to-speech",
+    "openai",
+    "pdf",
+    "cli",
+    "terminal"
+  ],
+  "author": "AI Audiobook Maker",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "ink": "^4.4.0",
+    "react": "^18.2.0",
+    "inquirer": "^9.2.0",
+    "prompts": "^2.4.2",
+    "axios": "^1.6.0",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.0",
+    "play-sound": "^1.1.6",
+    "pdf-parse": "^1.1.1",
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7",
+    "os": "^0.1.2",
+    "crypto": "^1.0.1",
+    "commander": "^11.1.0",
+    "node-gyp": "^10.0.0"
+  },
+  "files": [
+    "cli.js",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iamthamanic/AI-Audiobook-Maker"
+  },
+  "bugs": {
+    "url": "https://github.com/iamthamanic/AI-Audiobook-Maker/issues"
+  },
+  "homepage": "https://github.com/iamthamanic/AI-Audiobook-Maker#readme"
+}

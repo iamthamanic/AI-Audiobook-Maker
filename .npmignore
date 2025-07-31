@@ -1,0 +1,60 @@
+# Source control
+.git/
+.gitignore
+
+# Development files
+.env
+.env.*
+*.log
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Documentation source
+docs/
+
+# Examples
+examples/
+demo.txt
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scripts
+*.sh
+
+# Images
+*.jpg
+*.png
+*.gif
+
+# Temporary directories
+tmp/
+temp/
+.hive-mind/
+.claude-flow/
+
+# Audio output
+audiobooks/
+*.mp3
+*.wav
+*.m4a
+
+# Development dependencies
+.eslintrc*
+.prettierrc*
+.editorconfig
