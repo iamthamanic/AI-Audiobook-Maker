@@ -37,37 +37,43 @@ class ConfigManager {
   encryptConfig(config) {
     if (!config.apiKey) return config;
     
-    const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipherGCM('aes-256-gcm', key, iv);
-    
-    let encrypted = cipher.update(config.apiKey, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    const authTag = cipher.getAuthTag();
-    
-    return {
-      ...config,
-      apiKey: `${iv.toString('hex')}:${encrypted}:${authTag.toString('hex')}`
-    };
+    try {
+      const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
+      const iv = crypto.randomBytes(16);
+      const cipher = crypto.createCipher('aes-256-cbc', key);
+      
+      let encrypted = cipher.update(config.apiKey, 'utf8', 'hex');
+      encrypted += cipher.final('hex');
+      
+      return {
+        ...config,
+        apiKey: `${iv.toString('hex')}:${encrypted}`
+      };
+    } catch (error) {
+      // Fallback to base64 encoding if crypto fails
+      console.log(chalk.yellow('⚠️  Using basic encoding for API key storage'));
+      return {
+        ...config,
+        apiKey: `basic:${Buffer.from(config.apiKey).toString('base64')}`
+      };
+    }
   }
 
   decryptConfig(config) {
     if (!config.apiKey || !config.apiKey.includes(':')) return config;
     
     try {
-      const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
       const parts = config.apiKey.split(':');
-      if (parts.length === 2) {
-        // Legacy format - return config without decryption (force re-entry)
-        console.log(chalk.yellow('⚠️  Old encryption format detected, please re-enter your API key'));
-        return { ...config, apiKey: null };
-      } else if (parts.length === 3) {
-        // New GCM format
-        const [ivHex, encrypted, authTagHex] = parts;
-        const iv = Buffer.from(ivHex, 'hex');
-        const authTag = Buffer.from(authTagHex, 'hex');
-        const decipher = crypto.createDecipherGCM('aes-256-gcm', key, iv);
-        decipher.setAuthTag(authTag);
+      
+      if (parts[0] === 'basic') {
+        // Base64 encoded
+        const decrypted = Buffer.from(parts[1], 'base64').toString('utf8');
+        return { ...config, apiKey: decrypted };
+      } else if (parts.length === 2) {
+        // AES encrypted
+        const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
+        const [ivHex, encrypted] = parts;
+        const decipher = crypto.createDecipher('aes-256-cbc', key);
         let decrypted = decipher.update(encrypted, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
         return { ...config, apiKey: decrypted };
