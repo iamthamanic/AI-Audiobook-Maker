@@ -1,6 +1,6 @@
 {
   "name": "aiabm",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Alias package for ai-audiobook-maker - AI Audiobook Maker CLI",
   "main": "index.js",
   "bin": {
@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/iamthamanic/AI-Audiobook-Maker#readme",
   "dependencies": {
-    "ai-audiobook-maker": "^2.0.2"
+    "ai-audiobook-maker": "^2.0.3"
   },
   "engines": {
     "node": ">=16.0.0"

@@ -37,16 +37,17 @@ class ConfigManager {
   encryptConfig(config) {
     if (!config.apiKey) return config;
     
-    const key = crypto.scryptSync('aiabm-secret', 'salt', 24);
+    const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
     const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipher('aes192', key);
+    const cipher = crypto.createCipherGCM('aes-256-gcm', key, iv);
     
     let encrypted = cipher.update(config.apiKey, 'utf8', 'hex');
     encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag();
     
     return {
       ...config,
-      apiKey: `${iv.toString('hex')}:${encrypted}`
+      apiKey: `${iv.toString('hex')}:${encrypted}:${authTag.toString('hex')}`
     };
   }
 
@@ -54,17 +55,28 @@ class ConfigManager {
     if (!config.apiKey || !config.apiKey.includes(':')) return config;
     
     try {
-      const key = crypto.scryptSync('aiabm-secret', 'salt', 24);
-      const [ivHex, encrypted] = config.apiKey.split(':');
-      const decipher = crypto.createDecipher('aes192', key);
+      const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
+      const parts = config.apiKey.split(':');
+      if (parts.length === 2) {
+        // Legacy format - fallback to createDecipher
+        const [ivHex, encrypted] = parts;
+        const decipher = crypto.createDecipher('aes192', key);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return { ...config, apiKey: decrypted };
+      } else if (parts.length === 3) {
+        // New GCM format
+        const [ivHex, encrypted, authTagHex] = parts;
+        const iv = Buffer.from(ivHex, 'hex');
+        const authTag = Buffer.from(authTagHex, 'hex');
+        const decipher = crypto.createDecipherGCM('aes-256-gcm', key, iv);
+        decipher.setAuthTag(authTag);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return { ...config, apiKey: decrypted };
+      }
       
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      
-      return {
-        ...config,
-        apiKey: decrypted
-      };
+      return config;
     } catch (error) {
       console.log(chalk.yellow('⚠️  Could not decrypt API key, please re-enter'));
       return { ...config, apiKey: null };
