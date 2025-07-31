@@ -8,7 +8,7 @@ Transform your PDFs and text files into high-quality audiobooks using OpenAI's a
 
 ## ✨ Features
 
-- **🚀 Zero Installation**: Run directly with `npx ai-audiobook-maker`
+- **🚀 Zero Installation**: Run directly with `npx aiabm`
 - **📁 Smart File Handling**: Supports PDF and TXT files with drag & drop
 - **🎤 Voice Preview**: Listen to all 6 OpenAI voices before choosing
 - **⏸️ Resume & Pause**: Continue interrupted conversions anytime
@@ -22,16 +22,16 @@ Transform your PDFs and text files into high-quality audiobooks using OpenAI's a
 ### Method 1: Direct Usage (Recommended)
 ```bash
 # Convert a specific file
-npx ai-audiobook-maker mybook.pdf
+npx aiabm mybook.pdf
 
 # Interactive mode
-npx ai-audiobook-maker
+npx aiabm
 ```
 
 ### Method 2: Global Installation
 ```bash
 npm install -g ai-audiobook-maker
-ai-audiobook-maker mybook.pdf
+aiabm mybook.pdf
 ```
 
 ## 📋 Prerequisites
@@ -45,18 +45,18 @@ ai-audiobook-maker mybook.pdf
 ### CLI Mode
 ```bash
 # Basic conversion
-npx ai-audiobook-maker document.pdf
+npx aiabm document.pdf
 
 # With specific options
-npx ai-audiobook-maker book.txt --voice nova --speed 1.2 --model tts-1-hd
+npx aiabm book.txt --voice nova --speed 1.2 --model tts-1-hd
 
 # Manage API key
-npx ai-audiobook-maker --config
+npx aiabm --config
 ```
 
 ### Interactive Mode
 ```bash
-npx ai-audiobook-maker
+npx aiabm
 ```
 Then follow the interactive prompts to:
 1. Select your file (browse, drag & drop, or enter path)
@@ -144,7 +144,7 @@ sudo apt install ffmpeg
 
 **"API key invalid"**
 - Verify your key at [OpenAI Platform](https://platform.openai.com/account/api-keys)
-- Use `npx ai-audiobook-maker --config` to update your key
+- Use `npx aiabm --config` to update your key
 
 **"File too large"**
 - PDFs: Maximum 50MB
@@ -174,12 +174,12 @@ sudo apt install ffmpeg
 
 ### Converting a PDF Book
 ```bash
-npx ai-audiobook-maker "My Great Novel.pdf"
+npx aiabm "My Great Novel.pdf"
 ```
 
 ### Interactive Voice Selection
 ```bash
-npx ai-audiobook-maker
+npx aiabm
 # Select "Preview all voices"
 # Listen to each voice sample
 # Choose your favorite
@@ -190,7 +190,7 @@ npx ai-audiobook-maker
 ### Batch Processing Tips
 ```bash
 # Process multiple files
-for file in *.pdf; do npx ai-audiobook-maker "$file" --voice nova --speed 1.1; done
+for file in *.pdf; do npx aiabm "$file" --voice nova --speed 1.1; done
 ```
 
 ## 🤝 Contributing
@@ -209,8 +209,13 @@ MIT License - see LICENSE file for details
 
 ## 📝 Changelog
 
+### v2.0.1 (2025-07-31)
+- 🔧 Fixed CLI command back to `aiabm` as originally intended
+- 📝 Updated documentation to reflect correct command usage
+
 ### v2.0.0 (2025-07-31)
-- 🎨 Renamed package to `ai-audiobook-maker` for better npm discoverability
+- 🎨 Renamed npm package to `ai-audiobook-maker` for better discoverability
+- ⌨️  CLI command remains `aiabm` for convenience
 - 📦 Improved package structure and metadata
 - 🔧 Added proper .gitignore and .npmignore files
 - 📄 Added MIT LICENSE file

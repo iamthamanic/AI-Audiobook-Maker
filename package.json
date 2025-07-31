@@ -1,10 +1,10 @@
 {
   "name": "ai-audiobook-maker",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS",
   "main": "src/AudiobookMaker.js",
   "bin": {
-    "ai-audiobook-maker": "./cli.js"
+    "aiabm": "./cli.js"
   },
   "scripts": {
     "start": "node cli.js",
