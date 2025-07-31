@@ -58,12 +58,9 @@ class ConfigManager {
       const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
       const parts = config.apiKey.split(':');
       if (parts.length === 2) {
-        // Legacy format - fallback to createDecipher
-        const [ivHex, encrypted] = parts;
-        const decipher = crypto.createDecipher('aes192', key);
-        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-        decrypted += decipher.final('utf8');
-        return { ...config, apiKey: decrypted };
+        // Legacy format - return config without decryption (force re-entry)
+        console.log(chalk.yellow('⚠️  Old encryption format detected, please re-enter your API key'));
+        return { ...config, apiKey: null };
       } else if (parts.length === 3) {
         // New GCM format
         const [ivHex, encrypted, authTagHex] = parts;
