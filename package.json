@@ -1,6 +1,6 @@
 {
   "name": "ai-audiobook-maker",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS",
   "main": "src/AudiobookMaker.js",
   "bin": {
@@ -27,7 +27,7 @@
   "dependencies": {
     "ink": "^4.4.0",
     "react": "^18.2.0",
-    "inquirer": "^9.2.0",
+    "inquirer": "^8.2.6",
     "prompts": "^2.4.2",
     "axios": "^1.6.0",
     "chalk": "^4.1.2",

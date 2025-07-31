@@ -45,6 +45,7 @@ class AudiobookMaker {
   async showMainMenu() {
     while (true) {
       console.log(chalk.cyan('\n🎧 AI Audiobook Maker - Main Menu'));
+      console.log(chalk.gray('Use arrow keys to navigate, Enter to select\n'));
       
       const { action } = await inquirer.prompt([
         {
