@@ -1157,7 +1157,6 @@ services:
       default: return '⏳';
     }
   }
-}
 
   // Advanced sentencepiece installation with multiple fallback strategies
   async installSentencepieceWithFallbacks(venvPip, venvPython) {
