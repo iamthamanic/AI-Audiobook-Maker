@@ -1,6 +1,6 @@
 {
   "name": "aiabm",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS or Kyutai TTS (local/free)",
   "main": "src/AudiobookMaker.js",
   "bin": {

@@ -670,6 +670,10 @@ class AudiobookMaker {
       });
     }
     
+    // Install sentencepiece with special handling (required for Moshi)
+    console.log(chalk.gray('   Installing sentencepiece (required for Moshi)...'));
+    await this.installSentencepieceWithFallbacks(venvPip, venvPython);
+    
     // Install moshi without dependencies (we have most of them)
     console.log(chalk.gray('   Installing moshi (no deps)...'));
     await execAsync(`"${venvPip}" install --no-deps moshi==0.2.11`, {
@@ -1152,6 +1156,75 @@ services:
       case 'failed': return '❌';
       default: return '⏳';
     }
+  }
+}
+
+  // Advanced sentencepiece installation with multiple fallback strategies
+  async installSentencepieceWithFallbacks(venvPip, venvPython) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const strategies = [
+      // Strategy 1: Pre-built wheel
+      {
+        name: 'pre-built wheel',
+        command: `"${venvPip}" install --only-binary=all sentencepiece`
+      },
+      // Strategy 2: With protobuf first
+      {
+        name: 'with protobuf',
+        command: async () => {
+          await execAsync(`"${venvPip}" install protobuf`, { timeout: 60000 });
+          await execAsync(`"${venvPip}" install --no-cache-dir sentencepiece`, { timeout: 300000 });
+        }
+      },
+      // Strategy 3: Force rebuild
+      {
+        name: 'force rebuild',
+        command: `"${venvPip}" install --force-reinstall --no-binary sentencepiece sentencepiece`
+      },
+      // Strategy 4: Alternative version
+      {
+        name: 'alternative version',
+        command: `"${venvPip}" install sentencepiece==0.1.99`
+      },
+      // Strategy 5: From conda-forge if available
+      {
+        name: 'conda-forge fallback',
+        command: async () => {
+          try {
+            await execAsync('conda install -c conda-forge sentencepiece -y', { timeout: 180000 });
+          } catch (condaError) {
+            throw new Error('Conda not available');
+          }
+        }
+      }
+    ];
+
+    for (const strategy of strategies) {
+      try {
+        console.log(chalk.gray(`     Trying ${strategy.name}...`));
+        
+        if (typeof strategy.command === 'function') {
+          await strategy.command();
+        } else {
+          await execAsync(strategy.command, { timeout: 300000 });
+        }
+        
+        // Test if sentencepiece works
+        await execAsync(`"${venvPython}" -c "import sentencepiece; print('sentencepiece OK')"`, { timeout: 5000 });
+        console.log(chalk.green(`     ✅ sentencepiece installed via ${strategy.name}`));
+        return true;
+        
+      } catch (error) {
+        console.log(chalk.yellow(`     ❌ ${strategy.name} failed`));
+        continue;
+      }
+    }
+    
+    console.log(chalk.red('     ❌ All sentencepiece installation strategies failed'));
+    console.log(chalk.yellow('     ⚠️  Moshi may have limited functionality'));
+    return false;
   }
 }
 
