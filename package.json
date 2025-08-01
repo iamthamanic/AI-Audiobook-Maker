@@ -4,7 +4,7 @@
   "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS or Kyutai TTS (local/free)",
   "main": "src/AudiobookMaker.js",
   "bin": {
-    "aiabm": "./cli.js"
+    "aiabm": "cli.js"
   },
   "scripts": {
     "start": "node cli.js",
@@ -49,7 +49,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/iamthamanic/AI-Audiobook-Maker"
+    "url": "git+https://github.com/iamthamanic/AI-Audiobook-Maker.git"
   },
   "bugs": {
     "url": "https://github.com/iamthamanic/AI-Audiobook-Maker/issues"
