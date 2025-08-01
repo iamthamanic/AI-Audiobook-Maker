@@ -293,24 +293,32 @@ class AudiobookMaker {
     console.log(chalk.gray('┌─ First time setup (one-time) ─┐'));
     console.log(chalk.gray('│ ⚠️  Kyutai TTS runs locally    │'));
     console.log(chalk.gray('│ 📦 Size: ~2GB download        │'));
-    console.log(chalk.gray('│ 🖥️  Requires: Python + PyTorch │'));
+    console.log(chalk.gray('│ 🖥️  Multiple installation options │'));
     console.log(chalk.gray('└────────────────────────────────┘\n'));
+
+    const installationMethods = [
+      { name: '🚀 Smart installation (tries multiple methods)', value: 'install' },
+      { name: '📦 Try Conda installation (recommended if available)', value: 'conda' },
+      { name: '🐳 Docker installation (most reliable)', value: 'docker' },
+      { name: '🤖 Use OpenAI TTS instead', value: 'openai' },
+      { name: '📋 Show manual installation guide', value: 'manual' }
+    ];
 
     const { action } = await inquirer.prompt([
       {
         type: 'list',
         name: 'action',
-        message: 'What would you like to do?',
-        choices: [
-          { name: '🚀 Install Kyutai TTS automatically', value: 'install' },
-          { name: '🤖 Use OpenAI TTS instead', value: 'openai' },
-          { name: '📋 Show manual installation guide', value: 'manual' }
-        ]
+        message: 'Choose installation method:',
+        choices: installationMethods
       }
     ]);
 
     if (action === 'install') {
       return await this.installKyutai();
+    } else if (action === 'conda') {
+      return await this.installKyutaiWithConda();
+    } else if (action === 'docker') {
+      return await this.installKyutaiWithDocker();
     } else if (action === 'manual') {
       this.showManualInstallation();
       return false;
@@ -429,50 +437,321 @@ class AudiobookMaker {
     const { promisify } = require('util');
     const execAsync = promisify(exec);
     const path = require('path');
+    const fs = require('fs-extra');
     
     const repoDir = path.join(installDir, 'delayed-streams-modeling');
+    const venvDir = path.join(installDir, 'kyutai-env');
     
-    // Determine pip command (pip or pip3)
-    let pipCommand = 'pip';
-    try {
-      await execAsync('pip --version');
-    } catch (error) {
-      try {
-        await execAsync('pip3 --version');
-        pipCommand = 'pip3';
-      } catch (pip3Error) {
-        throw new Error('pip not found. Please install pip');
-      }
+    // Create virtual environment if it doesn't exist
+    if (!await fs.pathExists(venvDir)) {
+      console.log(chalk.gray('   Creating virtual environment...'));
+      await execAsync(`python3 -m venv "${venvDir}"`);
     }
     
-    // Install basic dependencies
-    const dependencies = [
-      'torch',
+    const venvPython = path.join(venvDir, 'bin', 'python');
+    const venvPip = path.join(venvDir, 'bin', 'pip');
+    
+    // Try multiple installation strategies
+    try {
+      // Strategy 1: Install with conda if available
+      await this.tryCondaInstallation(venvDir);
+    } catch (condaError) {
+      console.log(chalk.yellow('   Conda not available, trying pip...'));
+      
+      try {
+        // Strategy 2: Install with specific Python version and precompiled wheels
+        await this.tryOptimizedPipInstallation(venvPython, venvPip);
+      } catch (pipError) {
+        console.log(chalk.yellow('   Advanced pip installation failed, trying basic...'));
+        
+        // Strategy 3: Basic installation with workarounds
+        await this.tryBasicInstallation(venvPython, venvPip, repoDir);
+      }
+    }
+  }
+  
+  async tryCondaInstallation(venvDir) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // Check if conda is available
+    await execAsync('conda --version');
+    
+    console.log(chalk.cyan('   📦 Using conda for installation (recommended)...'));
+    
+    // Create conda environment
+    const envName = 'kyutai-tts';
+    await execAsync(`conda create -n ${envName} python=3.11 -y`);
+    
+    // Install dependencies via conda
+    const condaPackages = [
+      'pytorch',
       'torchaudio', 
       'transformers',
       'numpy',
       'scipy',
-      'librosa'
+      'librosa',
+      'sentencepiece'  // Often available as conda package
     ];
     
-    for (const dep of dependencies) {
-      console.log(chalk.gray(`   Installing ${dep}...`));
-      await execAsync(`${pipCommand} install ${dep}`, { 
-        cwd: repoDir,
-        timeout: 300000 // 5 minutes timeout per package
+    for (const pkg of condaPackages) {
+      console.log(chalk.gray(`   Installing ${pkg} via conda...`));
+      try {
+        await execAsync(`conda install -n ${envName} -c pytorch -c conda-forge ${pkg} -y`, {
+          timeout: 300000
+        });
+      } catch (error) {
+        console.log(chalk.yellow(`   Could not install ${pkg} via conda, will try pip...`));
+      }
+    }
+    
+    // Try to install moshi in conda environment
+    await execAsync(`conda run -n ${envName} pip install moshi==0.2.11 einops aiohttp`, {
+      timeout: 600000
+    });
+    
+    console.log(chalk.green('   ✅ Conda installation completed'));
+  }
+  
+  async tryOptimizedPipInstallation(venvPython, venvPip) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    console.log(chalk.cyan('   🐍 Using optimized pip installation...'));
+    
+    // Upgrade pip first
+    await execAsync(`"${venvPython}" -m pip install --upgrade pip`);
+    
+    // Install with specific strategies for problematic packages
+    const installCommands = [
+      // Install PyTorch with CPU support
+      `"${venvPip}" install torch torchaudio --index-url https://download.pytorch.org/whl/cpu`,
+      
+      // Install basic ML packages
+      `"${venvPip}" install numpy transformers huggingface-hub`,
+      
+      // Try to install pre-built sentencepiece wheel
+      `"${venvPip}" install --only-binary=all sentencepiece`,
+      
+      // Install audio packages
+      `"${venvPip}" install sounddevice sphn einops aiohttp`,
+      
+      // Install moshi without building dependencies
+      `"${venvPip}" install --no-deps moshi==0.2.11`
+    ];
+    
+    for (const cmd of installCommands) {
+      console.log(chalk.gray(`   ${cmd.split(' ').slice(-1)[0]}...`));
+      try {
+        await execAsync(cmd, { timeout: 300000 });
+      } catch (error) {
+        if (cmd.includes('sentencepiece')) {
+          console.log(chalk.yellow('   ⚠️  sentencepiece failed, trying alternative...'));
+          // Try alternative sentencepiece installation
+          await execAsync(`"${venvPip}" install protobuf`, { timeout: 60000 });
+          await execAsync(`"${venvPip}" install --no-cache-dir sentencepiece`, { timeout: 300000 });
+        } else {
+          throw error;
+        }
+      }
+    }
+    
+    console.log(chalk.green('   ✅ Optimized pip installation completed'));
+  }
+  
+  async tryBasicInstallation(venvPython, venvPip, repoDir) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    console.log(chalk.cyan('   🔧 Using basic installation with workarounds...'));
+    
+    // Install essential packages first
+    const essentialPackages = [
+      'numpy',
+      'torch',
+      'transformers', 
+      'sounddevice',
+      'einops',
+      'aiohttp'
+    ];
+    
+    for (const pkg of essentialPackages) {
+      console.log(chalk.gray(`   Installing ${pkg}...`));
+      await execAsync(`"${venvPip}" install ${pkg}`, { 
+        timeout: 300000
       });
     }
     
-    // Check if requirements.txt exists and install from it
-    const fs = require('fs-extra');
-    const requirementsPath = path.join(repoDir, 'requirements.txt');
-    if (await fs.pathExists(requirementsPath)) {
-      console.log(chalk.gray('   Installing from requirements.txt...'));
-      await execAsync(`${pipCommand} install -r requirements.txt`, { 
-        cwd: repoDir,
-        timeout: 600000 // 10 minutes timeout
-      });
+    // Install moshi without dependencies (we have most of them)
+    console.log(chalk.gray('   Installing moshi (no deps)...'));
+    await execAsync(`"${venvPip}" install --no-deps moshi==0.2.11`, {
+      timeout: 60000
+    });
+    
+    console.log(chalk.green('   ✅ Basic installation completed'));
+    console.log(chalk.yellow('   ⚠️  Some advanced features may not work without sentencepiece'));
+  }
+
+  async installKyutaiWithConda() {
+    console.log(chalk.cyan('\n📦 Installing Kyutai TTS with Conda...'));
+    
+    try {
+      // Step 1: Check if conda is available
+      console.log(chalk.gray('📋 Step 1/3: Checking Conda availability...'));
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
+      await execAsync('conda --version');
+      console.log(chalk.green('✅ Conda found'));
+
+      // Step 2: Create installation directory and clone repo
+      console.log(chalk.gray('📋 Step 2/3: Setting up repository...'));
+      const installDir = await this.createKyutaiInstallDir();
+      await this.cloneKyutaiRepository(installDir);
+      
+      // Step 3: Install with conda
+      console.log(chalk.gray('📋 Step 3/3: Installing dependencies with Conda...'));
+      await this.tryCondaInstallation(installDir);
+      
+      console.log(chalk.green('\n🎉 Conda-based Kyutai TTS installation completed!'));
+      return true;
+      
+    } catch (error) {
+      console.log(chalk.red(`\n❌ Conda installation failed: ${error.message}`));
+      console.log(chalk.yellow('💡 Falling back to smart installation...'));
+      return await this.installKyutai();
     }
+  }
+
+  async installKyutaiWithDocker() {
+    console.log(chalk.cyan('\n🐳 Installing Kyutai TTS with Docker...'));
+    
+    try {
+      // Step 1: Check Docker availability
+      console.log(chalk.gray('📋 Step 1/4: Checking Docker availability...'));
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
+      await execAsync('docker --version');
+      console.log(chalk.green('✅ Docker found'));
+
+      // Step 2: Create installation directory
+      console.log(chalk.gray('📋 Step 2/4: Creating installation directory...'));
+      const installDir = await this.createKyutaiInstallDir();
+      
+      // Step 3: Create Docker setup
+      console.log(chalk.gray('📋 Step 3/4: Creating Docker environment...'));
+      await this.createKyutaiDockerSetup(installDir);
+      
+      // Step 4: Build Docker image
+      console.log(chalk.gray('📋 Step 4/4: Building Docker image...'));
+      console.log(chalk.yellow('⏳ This may take 10-15 minutes for first time...'));
+      await this.buildKyutaiDockerImage(installDir);
+      
+      console.log(chalk.green('\n🎉 Docker-based Kyutai TTS installation completed!'));
+      console.log(chalk.cyan('🔄 Restarting voice selection...'));
+      
+      return true;
+      
+    } catch (error) {
+      console.log(chalk.red(`\n❌ Docker installation failed: ${error.message}`));
+      if (error.message.includes('docker --version')) {
+        console.log(chalk.yellow('💡 Docker not found. Please install Docker Desktop first.'));
+      }
+      console.log(chalk.yellow('💡 Falling back to smart installation...'));
+      return await this.installKyutai();
+    }
+  }
+
+  async createKyutaiDockerSetup(installDir) {
+    const path = require('path');
+    const fs = require('fs-extra');
+    
+    // Create Dockerfile
+    const dockerfile = `FROM python:3.11-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \\
+    git \\
+    build-essential \\
+    cmake \\
+    pkg-config \\
+    libprotobuf-dev \\
+    protobuf-compiler \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Clone Kyutai repository
+RUN git clone https://github.com/kyutai-labs/delayed-streams-modeling.git
+
+# Install Python dependencies
+WORKDIR /app/delayed-streams-modeling
+RUN pip install --no-cache-dir \\
+    torch \\
+    torchaudio \\
+    transformers \\
+    numpy \\
+    sounddevice \\
+    einops \\
+    aiohttp \\
+    sphn \\
+    sentencepiece \\
+    moshi==0.2.11
+
+# Expose port for API
+EXPOSE 8000
+
+# Default command
+CMD ["python", "scripts/tts_pytorch.py", "--help"]
+`;
+
+    await fs.writeFile(path.join(installDir, 'Dockerfile'), dockerfile);
+    
+    // Create docker-compose.yml
+    const dockerCompose = `version: '3.8'
+services:
+  kyutai-tts:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+    environment:
+      - PYTHONPATH=/app/delayed-streams-modeling
+    command: tail -f /dev/null  # Keep container running
+`;
+
+    await fs.writeFile(path.join(installDir, 'docker-compose.yml'), dockerCompose);
+    
+    // Create input/output directories
+    await fs.ensureDir(path.join(installDir, 'input'));
+    await fs.ensureDir(path.join(installDir, 'output'));
+  }
+
+  async buildKyutaiDockerImage(installDir) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    
+    // Build Docker image
+    await execAsync('docker-compose build', { 
+      cwd: installDir,
+      timeout: 900000 // 15 minutes timeout
+    });
+    
+    // Start container
+    await execAsync('docker-compose up -d', { 
+      cwd: installDir,
+      timeout: 60000
+    });
   }
 
   showManualInstallation() {
