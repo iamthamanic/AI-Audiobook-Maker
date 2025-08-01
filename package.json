@@ -1,7 +1,7 @@
 {
   "name": "aiabm",
-  "version": "3.1.1",
-  "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS",
+  "version": "3.2.0",
+  "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS or Kyutai TTS (local/free)",
   "main": "src/AudiobookMaker.js",
   "bin": {
     "aiabm": "./cli.js"
@@ -15,9 +15,12 @@
     "tts",
     "text-to-speech",
     "openai",
+    "kyutai",
+    "local-tts",
     "pdf",
     "cli",
-    "terminal"
+    "terminal",
+    "ai"
   ],
   "author": "AI Audiobook Maker",
   "license": "MIT",

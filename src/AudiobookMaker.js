@@ -585,7 +585,7 @@ class AudiobookMaker {
       console.log(chalk.gray(`Remaining: ${remainingChunks.length} chunks\n`));
 
       // Continue conversion
-      const baseOutputDir = settings.outputDirectory || path.join(process.cwd(), 'audiobook_output');
+      const baseOutputDir = session.options.outputDirectory || path.join(process.cwd(), 'audiobook_output');
       const outputDir = session.outputDir || path.join(baseOutputDir, `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`);
       await fs.ensureDir(outputDir);
 

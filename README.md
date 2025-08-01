@@ -1,21 +1,26 @@
 # 🎧 AI Audiobook Maker (AIABM)
 
-[![npm version](https://img.shields.io/npm/v/ai-audiobook-maker.svg)](https://www.npmjs.com/package/ai-audiobook-maker)
+[![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/ai-audiobook-maker.svg)](https://nodejs.org)
 
-Transform your PDFs and text files into high-quality audiobooks using OpenAI's advanced Text-to-Speech technology. No installation required - just run with `npx`!
+Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud) or **Kyutai TTS** (local/free). Choose between premium cloud voices or run everything locally at no cost!
 
 ## ✨ Features
 
+### 🎙️ **Dual TTS Providers**
+- **☁️ OpenAI TTS**: Premium cloud voices (requires API key)
+- **🆓 Kyutai TTS**: Free local processing (no API costs)
+
+### 🚀 **Core Features**
 - **🚀 Zero Installation**: Run directly with `npx aiabm`
 - **📁 Smart File Handling**: Supports PDF and TXT files with drag & drop
-- **🎤 Voice Preview**: Listen to all 6 OpenAI voices before choosing
+- **🎤 Voice Preview**: Listen to voices before choosing (15+ Kyutai + 6 OpenAI)
 - **⏸️ Resume & Pause**: Continue interrupted conversions anytime
 - **🔐 Secure API Key Management**: Encrypted local storage
 - **📊 Progress Tracking**: Real-time conversion progress with estimates
 - **🎛️ Advanced Controls**: Adjust speed, quality, and output format
-- **💰 Cost Transparency**: See exact pricing before conversion
+- **💰 Cost Transparency**: See exact pricing (OpenAI) or run free (Kyutai)
 
 ## 🚀 Quick Start
 
@@ -30,15 +35,19 @@ npx aiabm
 
 ### Method 2: Global Installation
 ```bash
-npm install -g ai-audiobook-maker
+npm install -g aiabm
 aiabm mybook.pdf
 ```
 
 ## 📋 Prerequisites
 
+### Required
 - **Node.js 16+** (Download from [nodejs.org](https://nodejs.org/))
-- **OpenAI API Key** (Get from [platform.openai.com](https://platform.openai.com/account/api-keys))
 - **FFmpeg** (for audio combining - auto-installed on most systems)
+
+### Optional (Choose One or Both)
+- **OpenAI API Key** (Get from [platform.openai.com](https://platform.openai.com/account/api-keys)) - For cloud TTS
+- **Python 3.10+** (For Kyutai TTS local processing) - For free local TTS
 
 ## 🎯 Usage Examples
 
@@ -66,6 +75,7 @@ Then follow the interactive prompts to:
 
 ## 🎤 Available Voices
 
+### 🤖 OpenAI TTS (Cloud)
 - **Alloy**: Neutral, versatile
 - **Echo**: Clear, professional
 - **Fable**: Warm, storytelling
@@ -73,9 +83,17 @@ Then follow the interactive prompts to:
 - **Nova**: Bright, engaging
 - **Shimmer**: Gentle, soothing
 
+### 🆓 Kyutai TTS (Local/Free)
+- **VCTK Voices**: English speakers (p225, p226, p227, etc.)
+- **Expresso**: Conversational styles (Happy, Narration, Confused)
+- **EARS**: Natural speech patterns (Calm, Energetic)
+- **French Voices**: Native French speakers
+- **Custom Cloning**: Clone any voice from audio sample
+
 ## 💰 Pricing
 
-OpenAI TTS pricing: **$0.015 per 1,000 characters**
+### OpenAI TTS
+**$0.015 per 1,000 characters**
 
 | Content Length | Estimated Cost | Example |
 |----------------|----------------|---------|
@@ -83,6 +101,9 @@ OpenAI TTS pricing: **$0.015 per 1,000 characters**
 | 50,000 characters | ~$0.75 | Small e-book |
 | 100,000 characters | ~$1.50 | Average novel |
 | 250,000 characters | ~$3.75 | Large book |
+
+### Kyutai TTS
+**100% FREE** - No API costs, runs entirely on your machine!
 
 ## 🔧 Advanced Features
 
@@ -125,6 +146,36 @@ Your OpenAI API key is encrypted and stored locally at:
 Voice previews and temporary files:
 - **macOS/Linux**: `~/.config/ai-audiobook-maker/cache/`
 - **Windows**: `%APPDATA%\ai-audiobook-maker\cache\`
+
+## 🏗️ Kyutai TTS Setup (Local/Free)
+
+Kyutai TTS runs entirely on your machine - no API costs!
+
+### Automatic Installation
+```bash
+npx aiabm
+# Select "Kyutai TTS (Local, free)"
+# Choose "Install Kyutai TTS automatically"
+```
+
+### Manual Installation
+```bash
+# Install Python 3.10+ (required)
+python --version  # Must be 3.10 or higher
+
+# Clone repository  
+git clone https://github.com/kyutai-labs/delayed-streams-modeling.git ~/.aiabm/kyutai-tts/delayed-streams-modeling
+
+# Install dependencies
+cd ~/.aiabm/kyutai-tts/delayed-streams-modeling
+pip install moshi torch transformers sphn sounddevice
+```
+
+### System Requirements
+- **Python 3.10+** (Critical - earlier versions won't work)
+- **~2GB disk space** for models and dependencies
+- **4GB+ RAM** recommended
+- **CPU or GPU** (GPU faster but optional)
 
 ## 🛠️ Troubleshooting
 
@@ -203,11 +254,21 @@ MIT License - see LICENSE file for details
 
 ## 🙏 Acknowledgments
 
-- Built on OpenAI's TTS API
+- Built on OpenAI's TTS API and Kyutai TTS
 - Inspired by the original bash script version
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v3.2.0 (2025-08-01)
+- 🆓 **NEW**: Kyutai TTS integration - 100% free local text-to-speech!
+- 🎤 **15+ New Voices**: VCTK, Expresso, EARS, and French voice datasets
+- 🏗️ **Auto Installation**: Automatic Kyutai setup with dependency management
+- 🔄 **Provider Selection**: Choose between OpenAI (cloud) or Kyutai (local)
+- 🎯 **Voice Cloning**: Support for custom voice cloning (Kyutai)
+- 📊 **Enhanced UI**: Updated startup banner and provider selection
+- 🔧 **Improved Error Handling**: Better dependency detection and user guidance
+- 🌍 **Multilingual**: Added French TTS support via Kyutai
 
 ### v2.0.1 (2025-07-31)
 - 🔧 Fixed CLI command back to `aiabm` as originally intended
