@@ -12,63 +12,6 @@ class KyutaiService {
     this.kyutaiPath = null; // Will be set when Kyutai is found/installed
   }
 
-  async isAvailable() {
-    try {
-      const os = require('os');
-      const installDir = path.join(os.homedir(), '.aiabm', 'kyutai-tts');
-      const repoDir = path.join(installDir, 'delayed-streams-modeling');
-      
-      // Check if installation directory exists
-      if (!await fs.pathExists(repoDir)) {
-        console.log(chalk.gray('🔍 Kyutai repository not found'));
-        return false;
-      }
-      
-      // Check if main script exists
-      const scriptPath = path.join(repoDir, 'scripts', 'tts_pytorch.py');
-      if (!await fs.pathExists(scriptPath)) {
-        console.log(chalk.gray('🔍 Kyutai TTS script not found'));
-        return false;
-      }
-      
-      // For now, if the repository and script exist, consider it available
-      // We'll do a more thorough check during actual usage
-      this.kyutaiPath = repoDir;
-      console.log(chalk.green('✅ Kyutai TTS installation found'));
-      return true;
-      
-      /* Disabled for now - too strict
-      // Check if Python is available
-      let pythonCommand = 'python3';
-      try {
-        await execAsync('python --version');
-        pythonCommand = 'python';
-      } catch (error) {
-        try {
-          await execAsync('python3 --version');
-          pythonCommand = 'python3';
-        } catch (python3Error) {
-          console.log(chalk.gray('🔍 Python not found'));
-          return false;
-        }
-      }
-      
-      // Check if basic dependencies are available in the repository context
-      try {
-        await execAsync(`${pythonCommand} -c "import torch, transformers"`, { cwd: repoDir });
-        this.kyutaiPath = repoDir;
-        console.log(chalk.green('✅ Kyutai TTS fully available'));
-        return true;
-      } catch (error) {
-        console.log(chalk.yellow('⚠️  Kyutai installed but dependencies missing'));
-        return false;
-      }
-      */
-    } catch (error) {
-      console.log(chalk.red(`❌ Kyutai availability check failed: ${error.message}`));
-      return false;
-    }
-  }
 
   getVoices() {
     return [
@@ -247,14 +190,8 @@ class KyutaiService {
   async generateAudioFile(inputFile, outputFile, voice) {
     const scriptPath = path.join(this.kyutaiPath, 'scripts', 'tts_pytorch.py');
     
-    // Determine Python command
-    let pythonCommand = 'python3';
-    try {
-      await execAsync('python --version');
-      pythonCommand = 'python';
-    } catch (error) {
-      // Use python3 as fallback
-    }
+    // Determine Python command - prioritize virtual environment
+    let pythonCommand = await this.getPythonCommand();
     
     // Build command
     const cmd = [
@@ -272,8 +209,19 @@ class KyutaiService {
         timeout: 60000 // 1 minute timeout per chunk
       });
     } catch (error) {
-      // If CUDA error, retry with CPU explicitly
-      if (error.message.includes('CUDA') || error.message.includes('gpu')) {
+      // Enhanced error handling with user guidance
+      if (error.message.includes('ModuleNotFoundError')) {
+        if (error.message.includes('moshi')) {
+          throw new Error(`Moshi package not found. Please install with:
+cd ~/.aiabm/kyutai-tts && source kyutai-env/bin/activate && pip install moshi==0.2.11`);
+        } else if (error.message.includes('numpy')) {
+          throw new Error(`NumPy not found. Please install with:
+cd ~/.aiabm/kyutai-tts && source kyutai-env/bin/activate && pip install numpy torch`);
+        } else {
+          throw new Error(`Python dependency missing: ${error.message}
+Please ensure all dependencies are installed in the virtual environment.`);
+        }
+      } else if (error.message.includes('CUDA') || error.message.includes('gpu')) {
         console.log(chalk.yellow('⚠️  GPU error, retrying with CPU...'));
         const cpuCmd = cmd.replace('--device cpu', '--device cpu');
         await execAsync(cpuCmd, { 
@@ -322,6 +270,85 @@ class KyutaiService {
   // Method for concatenating audio files (alias for combineAudioFiles)
   async concatenateAudioFiles(audioFiles, outputPath) {
     return this.combineAudioFiles(audioFiles, outputPath);
+  }
+  
+  // Get the best Python command to use
+  async getPythonCommand() {
+    const os = require('os');
+    const installDir = path.join(os.homedir(), '.aiabm', 'kyutai-tts');
+    const venvPython = path.join(installDir, 'kyutai-env', 'bin', 'python');
+    
+    // Check if virtual environment Python exists and has required packages
+    if (await fs.pathExists(venvPython)) {
+      try {
+        // Test if virtual environment has numpy (basic dependency check)
+        await execAsync(`${venvPython} -c "import numpy"`, { timeout: 5000 });
+        console.log(chalk.green('✅ Using Kyutai virtual environment Python'));
+        return venvPython;
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Virtual environment Python missing dependencies'));
+      }
+    }
+    
+    // Fallback to system Python
+    try {
+      await execAsync('python --version');
+      return 'python';
+    } catch (error) {
+      return 'python3';
+    }
+  }
+  
+  // Enhanced availability check with dependency verification
+  async isAvailable() {
+    try {
+      const os = require('os');
+      const installDir = path.join(os.homedir(), '.aiabm', 'kyutai-tts');
+      const repoDir = path.join(installDir, 'delayed-streams-modeling');
+      
+      // Check if installation directory exists
+      if (!await fs.pathExists(repoDir)) {
+        console.log(chalk.gray('🔍 Kyutai repository not found'));
+        return false;
+      }
+      
+      // Check if main script exists
+      const scriptPath = path.join(repoDir, 'scripts', 'tts_pytorch.py');
+      if (!await fs.pathExists(scriptPath)) {
+        console.log(chalk.gray('🔍 Kyutai TTS script not found'));
+        return false;
+      }
+      
+      // Check Python and basic dependencies
+      const pythonCommand = await this.getPythonCommand();
+      try {
+        await execAsync(`${pythonCommand} -c "import numpy, torch"`, { timeout: 10000 });
+        
+        // Additional check for Moshi dependencies
+        try {
+          await execAsync(`${pythonCommand} -c "import moshi"`, { timeout: 5000 });
+          this.kyutaiPath = repoDir;
+          console.log(chalk.green('✅ Kyutai TTS fully available'));
+          return true;
+        } catch (moshiError) {
+          console.log(chalk.yellow('⚠️  Kyutai found but Moshi package missing'));
+          console.log(chalk.gray('   Complex installation required - using basic mode'));
+          this.kyutaiPath = repoDir;
+          return true; // Return true anyway, let the user try
+        }
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Kyutai found but Python dependencies missing'));
+        console.log(chalk.gray('   Install dependencies in virtual environment:'));
+        console.log(chalk.gray('   cd ~/.aiabm/kyutai-tts && source kyutai-env/bin/activate'));
+        console.log(chalk.gray('   pip install numpy torch transformers sphn sounddevice moshi'));
+        this.kyutaiPath = repoDir;
+        return true; // Return true anyway, let the user try
+      }
+      
+    } catch (error) {
+      console.log(chalk.red(`❌ Kyutai availability check failed: ${error.message}`));
+      return false;
+    }
   }
 }
 
