@@ -1,6 +1,7 @@
 const ConfigManager = require('./ConfigManager');
 const FileHandler = require('./FileHandler');
 const TTSService = require('./TTSService');
+const KyutaiService = require('./KyutaiService');
 const VoicePreview = require('./VoicePreview');
 const ProgressManager = require('./ProgressManager');
 const inquirer = require('inquirer');
@@ -105,13 +106,6 @@ class AudiobookMaker {
 
   async processFile(filePath, cliOptions = {}) {
     try {
-      // Initialize services if not already done
-      if (!this.ttsService) {
-        const apiKey = await this.configManager.ensureApiKey();
-        this.ttsService = new TTSService(apiKey, this.configManager.getCacheDir());
-        this.voicePreview = new VoicePreview(this.ttsService);
-      }
-
       console.log(chalk.cyan('\n🔍 Analyzing file...'));
       
       // Read and analyze file
@@ -188,7 +182,9 @@ class AudiobookMaker {
   async getConversionSettings(cliOptions = {}) {
     // Use CLI options if provided
     if (cliOptions.voice && cliOptions.speed && cliOptions.model) {
+      await this.initializeServices('openai'); // Default to OpenAI for CLI
       return {
+        provider: 'openai',
         voice: cliOptions.voice,
         speed: cliOptions.speed,
         model: cliOptions.model,
@@ -196,21 +192,161 @@ class AudiobookMaker {
       };
     }
 
-    // Interactive voice selection
-    const voice = await this.voicePreview.showVoiceSelection();
+    // Provider selection
+    const provider = await this.showProviderSelection();
+    if (!provider) return null;
+
+    // Initialize services based on selected provider
+    try {
+      await this.initializeServices(provider);
+    } catch (error) {
+      console.log(chalk.red(`❌ Failed to initialize ${provider} service: ${error.message}`));
+      return null;
+    }
+
+    // Interactive voice selection based on provider
+    const voice = await this.voicePreview.showVoiceSelection(provider);
     if (!voice) return null;
 
     // Get advanced settings
-    const advancedSettings = await this.voicePreview.getAdvancedSettings();
+    const advancedSettings = await this.voicePreview.getAdvancedSettings(provider);
 
     return {
+      provider,
       voice,
       ...advancedSettings
     };
   }
 
+  async initializeServices(provider = 'openai') {
+    if (provider === 'openai') {
+      // Check if we have a valid API key for OpenAI
+      const apiKey = await this.configManager.ensureApiKey();
+      if (!apiKey) throw new Error('OpenAI API key required');
+      
+      this.ttsService = new TTSService(apiKey, this.configManager.getCacheDir());
+    } else if (provider === 'kyutai') {
+      this.ttsService = new KyutaiService(this.configManager.getCacheDir());
+      
+      // Check if Kyutai is available
+      const available = await this.ttsService.isAvailable();
+      if (!available) {
+        console.log(chalk.yellow('⚠️  Kyutai TTS not found or not properly installed'));
+        throw new Error('Kyutai TTS not available');
+      }
+    }
+
+    this.voicePreview = new VoicePreview(this.ttsService);
+  }
+
+  async showProviderSelection() {
+    console.log(chalk.cyan('\n🤖 TTS Provider Selection'));
+    console.log(chalk.gray('Choose your text-to-speech provider\n'));
+    
+    const { provider } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'provider',
+        message: 'Select TTS Provider:',
+        choices: [
+          { 
+            name: '🤖 OpenAI TTS (Cloud, requires API key)', 
+            value: 'openai',
+            short: 'OpenAI TTS'
+          },
+          { 
+            name: '🆓 Kyutai TTS (Local, free, requires installation)', 
+            value: 'kyutai',
+            short: 'Kyutai TTS'
+          }
+        ],
+        default: 'openai'
+      }
+    ]);
+
+    // Check if Kyutai is available if selected
+    if (provider === 'kyutai') {
+      const kyutaiAvailable = await this.checkKyutaiInstallation();
+      if (!kyutaiAvailable) {
+        const shouldInstall = await this.showKyutaiInstallation();
+        if (!shouldInstall) {
+          return 'openai'; // Fallback to OpenAI
+        }
+      }
+    }
+
+    return provider;
+  }
+
+  async checkKyutaiInstallation() {
+    try {
+      const { exec } = require('child_process');
+      const { promisify } = require('util');
+      const execAsync = promisify(exec);
+      
+      // Check if Python and required packages are available
+      await execAsync('python --version');
+      // TODO: Check for Kyutai TTS installation
+      return false; // For now, always return false to trigger installation flow
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async showKyutaiInstallation() {
+    console.log(chalk.yellow('\n🆓 Kyutai TTS Setup Required'));
+    console.log(chalk.gray('┌─ First time setup (one-time) ─┐'));
+    console.log(chalk.gray('│ ⚠️  Kyutai TTS runs locally    │'));
+    console.log(chalk.gray('│ 📦 Size: ~2GB download        │'));
+    console.log(chalk.gray('│ 🖥️  Requires: Python + PyTorch │'));
+    console.log(chalk.gray('└────────────────────────────────┘\n'));
+
+    const { action } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'action',
+        message: 'What would you like to do?',
+        choices: [
+          { name: '🚀 Install Kyutai TTS automatically', value: 'install' },
+          { name: '🤖 Use OpenAI TTS instead', value: 'openai' },
+          { name: '📋 Show manual installation guide', value: 'manual' }
+        ]
+      }
+    ]);
+
+    if (action === 'install') {
+      return await this.installKyutai();
+    } else if (action === 'manual') {
+      this.showManualInstallation();
+      return false;
+    } else {
+      return false; // Use OpenAI instead
+    }
+  }
+
+  async installKyutai() {
+    console.log(chalk.cyan('\n🔧 Installing Kyutai TTS...'));
+    console.log(chalk.yellow('⚠️  This feature is coming soon!'));
+    console.log(chalk.gray('For now, please use the manual installation.\n'));
+    
+    this.showManualInstallation();
+    return false;
+  }
+
+  showManualInstallation() {
+    console.log(chalk.cyan('\n📋 Manual Installation Guide:'));
+    console.log(chalk.white('1. Install Python 3.8+ and pip'));
+    console.log(chalk.white('2. Clone repository:'));
+    console.log(chalk.gray('   git clone https://github.com/kyutai-labs/delayed-streams-modeling.git'));
+    console.log(chalk.white('3. Install dependencies:'));
+    console.log(chalk.gray('   pip install torch torchaudio transformers'));
+    console.log(chalk.white('4. Follow setup instructions in the repository'));
+    console.log(chalk.gray('   https://github.com/kyutai-labs/delayed-streams-modeling\n'));
+  }
+
   async convertToAudio(session, chunks, fileData, settings) {
-    const outputDir = path.join(process.cwd(), 'audiobook_output', `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`);
+    const baseOutputDir = settings.outputDirectory || path.join(process.cwd(), 'audiobook_output');
+    const outputDir = path.join(baseOutputDir, `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`);
     await fs.ensureDir(outputDir);
 
     await this.progressManager.updateProgress(session.id, { outputDir });
@@ -307,7 +443,8 @@ class AudiobookMaker {
       console.log(chalk.gray(`Remaining: ${remainingChunks.length} chunks\n`));
 
       // Continue conversion
-      const outputDir = session.outputDir || path.join(process.cwd(), 'audiobook_output', `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`);
+      const baseOutputDir = settings.outputDirectory || path.join(process.cwd(), 'audiobook_output');
+      const outputDir = session.outputDir || path.join(baseOutputDir, `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`);
       await fs.ensureDir(outputDir);
 
       // Process remaining chunks
@@ -387,6 +524,53 @@ class AudiobookMaker {
     
     if (session.finalOutputPath) {
       console.log(chalk.cyan('\n🎧 Your audiobook is ready to enjoy!'));
+      
+      // Ask if user wants to open output folder
+      const { openFolder } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'openFolder',
+          message: '📂 Open output folder?',
+          default: true
+        }
+      ]);
+      
+      if (openFolder) {
+        await this.openOutputFolder(session.outputDir);
+      }
+    }
+  }
+
+  async openOutputFolder(outputDir) {
+    try {
+      const { exec } = require('child_process');
+      const platform = process.platform;
+      
+      let command;
+      switch (platform) {
+        case 'darwin': // macOS
+          command = `open "${outputDir}"`;
+          break;
+        case 'win32': // Windows
+          command = `explorer "${outputDir}"`;
+          break;
+        case 'linux': // Linux
+          command = `xdg-open "${outputDir}"`;
+          break;
+        default:
+          console.log(chalk.yellow(`💡 Output folder: ${outputDir}`));
+          return;
+      }
+      
+      exec(command, (error) => {
+        if (error) {
+          console.log(chalk.yellow(`⚠️  Could not open folder automatically: ${outputDir}`));
+        } else {
+          console.log(chalk.green('📂 Output folder opened!'));
+        }
+      });
+    } catch (error) {
+      console.log(chalk.yellow(`💡 Output folder: ${outputDir}`));
     }
   }
 

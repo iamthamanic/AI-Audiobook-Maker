@@ -3,6 +3,7 @@ const chalk = require('chalk');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const os = require('os');
+const path = require('path');
 const fs = require('fs-extra');
 
 const execAsync = promisify(exec);
@@ -13,11 +14,11 @@ class VoicePreview {
     this.platform = os.platform();
   }
 
-  async showVoiceSelection() {
-    console.log(chalk.cyan('\n🎤 Voice Selection & Preview'));
+  async showVoiceSelection(provider = 'openai') {
+    console.log(chalk.cyan(`\n🎤 Voice Selection & Preview (${provider.toUpperCase()})`));
     console.log(chalk.gray('Listen to each voice before making your choice\n'));
 
-    const voices = this.ttsService.getVoices();
+    const voices = provider === 'openai' ? this.ttsService.getVoices() : this.getKyutaiVoices();
     const { action } = await inquirer.prompt([
       {
         type: 'list',
@@ -276,10 +277,26 @@ class VoicePreview {
     }
   }
 
-  async getAdvancedSettings() {
-    console.log(chalk.cyan('\n⚙️  Advanced Settings'));
+  getKyutaiVoices() {
+    return [
+      // US English voices
+      { name: 'US Male 1', value: 'us_male_1' },
+      { name: 'US Female 1', value: 'us_female_1' },
+      { name: 'US Male 2', value: 'us_male_2' },
+      { name: 'US Female 2', value: 'us_female_2' },
+      // UK English voices  
+      { name: 'UK Male 1', value: 'uk_male_1' },
+      { name: 'UK Female 1', value: 'uk_female_1' },
+      // French voices
+      { name: 'FR Male 1', value: 'fr_male_1' },
+      { name: 'FR Female 1', value: 'fr_female_1' }
+    ];
+  }
+
+  async getAdvancedSettings(provider = 'openai') {
+    console.log(chalk.cyan(`\n⚙️  Advanced Settings (${provider.toUpperCase()})`));
     
-    const { speed, model, outputOptions } = await inquirer.prompt([
+    const promptFields = [
       {
         type: 'input',
         name: 'speed',
@@ -292,8 +309,12 @@ class VoicePreview {
           }
           return true;
         }
-      },
-      {
+      }
+    ];
+
+    // Add provider-specific settings
+    if (provider === 'openai') {
+      promptFields.push({
         type: 'list',
         name: 'model',
         message: 'TTS Model:',
@@ -302,24 +323,83 @@ class VoicePreview {
           { name: 'tts-1-hd (Slower, Higher Quality)', value: 'tts-1-hd' }
         ],
         default: 'tts-1'
-      },
-      {
+      });
+    } else if (provider === 'kyutai') {
+      promptFields.push({
         type: 'list',
-        name: 'outputOptions',
-        message: 'Output format:',
+        name: 'model',
+        message: 'Quality Setting:',
         choices: [
-          { name: 'Single MP3 file (recommended)', value: 'single' },
-          { name: 'Separate files per chunk', value: 'separate' },
-          { name: 'Both single and separate files', value: 'both' }
+          { name: 'Standard (Faster)', value: 'standard' },
+          { name: 'High Quality (Slower)', value: 'high' }
         ],
-        default: 'single'
-      }
-    ]);
+        default: 'standard'
+      });
+    }
+
+    promptFields.push({
+      type: 'list',
+      name: 'outputOptions',
+      message: 'Output format:',
+      choices: [
+        { name: 'Single MP3 file (recommended)', value: 'single' },
+        { name: 'Separate files per chunk', value: 'separate' },
+        { name: 'Both single and separate files', value: 'both' }
+      ],
+      default: 'single'
+    });
+
+    promptFields.push({
+      type: 'list',
+      name: 'outputDirectory',
+      message: 'Output location:',
+      choices: [
+        { name: '📁 Desktop', value: path.join(os.homedir(), 'Desktop') },
+        { name: '🏠 Home folder', value: os.homedir() },
+        { name: '📂 Documents', value: path.join(os.homedir(), 'Documents') },
+        { name: '🎵 Music folder', value: path.join(os.homedir(), 'Music') },
+        { name: '📋 Current directory', value: process.cwd() },
+        { name: '✏️  Custom path...', value: 'custom' }
+      ],
+      default: path.join(os.homedir(), 'Desktop')
+    });
+
+    const { speed, model, outputOptions, outputDirectory } = await inquirer.prompt(promptFields);
+
+    // Handle custom path input
+    let finalOutputDirectory = outputDirectory;
+    if (outputDirectory === 'custom') {
+      const { customPath } = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'customPath',
+          message: 'Enter custom output path:',
+          default: os.homedir(),
+          validate: async (input) => {
+            try {
+              const expandedPath = input.startsWith('~') ? 
+                path.join(os.homedir(), input.slice(1)) : 
+                path.resolve(input);
+              
+              await fs.ensureDir(expandedPath);
+              return true;
+            } catch (error) {
+              return `Invalid path or unable to create directory: ${error.message}`;
+            }
+          }
+        }
+      ]);
+      
+      finalOutputDirectory = customPath.startsWith('~') ? 
+        path.join(os.homedir(), customPath.slice(1)) : 
+        path.resolve(customPath);
+    }
 
     return {
       speed: parseFloat(speed),
       model,
-      outputOptions
+      outputOptions,
+      outputDirectory: finalOutputDirectory
     };
   }
 }
