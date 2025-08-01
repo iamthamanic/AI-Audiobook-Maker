@@ -18,7 +18,7 @@ class VoicePreview {
     console.log(chalk.cyan(`\n🎤 Voice Selection & Preview (${provider.toUpperCase()})`));
     console.log(chalk.gray('Listen to each voice before making your choice\n'));
 
-    const voices = provider === 'openai' ? this.ttsService.getVoices() : this.getKyutaiVoices();
+    const voices = this.ttsService.getVoices();
     const { action } = await inquirer.prompt([
       {
         type: 'list',
@@ -34,15 +34,15 @@ class VoicePreview {
 
     switch (action) {
       case 'preview_all':
-        return await this.previewAllVoices();
+        return await this.previewAllVoices(provider);
       case 'select_direct':
-        return await this.selectVoiceDirect();
+        return await this.selectVoiceDirect(provider);
       case 'back':
         return null;
     }
   }
 
-  async previewAllVoices() {
+  async previewAllVoices(provider = 'openai') {
     console.log(chalk.cyan('\n🎵 Generating previews for all voices...'));
     
     try {
@@ -74,10 +74,15 @@ class VoicePreview {
     let selectedVoice = null;
     
     while (!selectedVoice) {
-      const choices = availableVoices.map(voice => ({
-        name: `🎵 ${voice.charAt(0).toUpperCase() + voice.slice(1)}`,
-        value: voice
-      }));
+      const choices = availableVoices.map(voice => {
+        const displayName = typeof voice === 'string' 
+          ? `${voice.charAt(0).toUpperCase() + voice.slice(1)}`
+          : voice.name || voice;
+        return {
+          name: `🎵 ${displayName}`,
+          value: voice
+        };
+      });
 
       // Add error voices as disabled options
       if (errors.length > 0) {
@@ -118,15 +123,22 @@ class VoicePreview {
   }
 
   async selectFromPreviewed(availableVoices) {
+    const choices = availableVoices.map(voice => {
+      const displayName = typeof voice === 'string' 
+        ? `${voice.charAt(0).toUpperCase() + voice.slice(1)}`
+        : voice.name || voice;
+      return {
+        name: displayName,
+        value: voice
+      };
+    });
+    
     const { voice } = await inquirer.prompt([
       {
         type: 'list',
         name: 'voice',
         message: 'Select your preferred voice:',
-        choices: availableVoices.map(voice => ({
-          name: `${voice.charAt(0).toUpperCase() + voice.slice(1)}`,
-          value: voice
-        }))
+        choices: choices
       }
     ]);
 
@@ -150,18 +162,32 @@ class VoicePreview {
     return await this.playPreviewsAndSelect(retryResults.previews, retryResults.errors);
   }
 
-  async selectVoiceDirect() {
+  async selectVoiceDirect(provider = 'openai') {
     const voices = this.ttsService.getVoices();
+    
+    // Handle both string voices (OpenAI) and object voices (Kyutai)
+    const choices = voices.map(voice => {
+      if (typeof voice === 'string') {
+        // OpenAI voices are strings
+        return {
+          name: `${voice.charAt(0).toUpperCase() + voice.slice(1)}`,
+          value: voice
+        };
+      } else {
+        // Kyutai voices are objects with name and value
+        return {
+          name: voice.name,
+          value: voice.value
+        };
+      }
+    });
     
     const { voice } = await inquirer.prompt([
       {
         type: 'list',
         name: 'voice',
         message: 'Select a voice:',
-        choices: voices.map(voice => ({
-          name: `${voice.charAt(0).toUpperCase() + voice.slice(1)}`,
-          value: voice
-        }))
+        choices: choices
       }
     ]);
 
@@ -277,21 +303,6 @@ class VoicePreview {
     }
   }
 
-  getKyutaiVoices() {
-    return [
-      // US English voices
-      { name: 'US Male 1', value: 'us_male_1' },
-      { name: 'US Female 1', value: 'us_female_1' },
-      { name: 'US Male 2', value: 'us_male_2' },
-      { name: 'US Female 2', value: 'us_female_2' },
-      // UK English voices  
-      { name: 'UK Male 1', value: 'uk_male_1' },
-      { name: 'UK Female 1', value: 'uk_female_1' },
-      // French voices
-      { name: 'FR Male 1', value: 'fr_male_1' },
-      { name: 'FR Female 1', value: 'fr_female_1' }
-    ];
-  }
 
   async getAdvancedSettings(provider = 'openai') {
     console.log(chalk.cyan(`\n⚙️  Advanced Settings (${provider.toUpperCase()})`));
