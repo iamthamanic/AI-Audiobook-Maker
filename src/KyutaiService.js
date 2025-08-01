@@ -14,10 +14,46 @@ class KyutaiService {
 
   async isAvailable() {
     try {
-      // Check if Kyutai TTS is installed and available
-      await execAsync('python --version');
-      // TODO: Add actual Kyutai installation check
-      return false; // For now, always return false until properly implemented
+      const os = require('os');
+      const installDir = path.join(os.homedir(), '.aiabm', 'kyutai-tts');
+      const repoDir = path.join(installDir, 'delayed-streams-modeling');
+      
+      // Check if installation directory exists
+      if (!await fs.pathExists(repoDir)) {
+        return false;
+      }
+      
+      // Check if Python is available
+      try {
+        await execAsync('python --version');
+      } catch (error) {
+        try {
+          await execAsync('python3 --version');
+        } catch (python3Error) {
+          return false;
+        }
+      }
+      
+      // Check if main script exists
+      const scriptPath = path.join(repoDir, 'scripts', 'tts_pytorch.py');
+      if (!await fs.pathExists(scriptPath)) {
+        return false;
+      }
+      
+      // Check if basic dependencies are available
+      try {
+        await execAsync('python -c "import torch, transformers"');
+        this.kyutaiPath = repoDir;
+        return true;
+      } catch (error) {
+        try {
+          await execAsync('python3 -c "import torch, transformers"');
+          this.kyutaiPath = repoDir;
+          return true;
+        } catch (python3Error) {
+          return false;
+        }
+      }
     } catch (error) {
       return false;
     }

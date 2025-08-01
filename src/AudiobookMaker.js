@@ -280,14 +280,9 @@ class AudiobookMaker {
 
   async checkKyutaiInstallation() {
     try {
-      const { exec } = require('child_process');
-      const { promisify } = require('util');
-      const execAsync = promisify(exec);
-      
-      // Check if Python and required packages are available
-      await execAsync('python --version');
-      // TODO: Check for Kyutai TTS installation
-      return false; // For now, always return false to trigger installation flow
+      // Create a temporary KyutaiService to check availability
+      const tempKyutaiService = new KyutaiService(this.configManager.getCacheDir());
+      return await tempKyutaiService.isAvailable();
     } catch (error) {
       return false;
     }
@@ -326,11 +321,158 @@ class AudiobookMaker {
 
   async installKyutai() {
     console.log(chalk.cyan('\n🔧 Installing Kyutai TTS...'));
-    console.log(chalk.yellow('⚠️  This feature is coming soon!'));
-    console.log(chalk.gray('For now, please use the manual installation.\n'));
     
-    this.showManualInstallation();
-    return false;
+    try {
+      // Step 1: Check Python installation
+      console.log(chalk.gray('📋 Step 1/4: Checking Python installation...'));
+      await this.checkPythonInstallation();
+      console.log(chalk.green('✅ Python found'));
+
+      // Step 2: Create installation directory
+      console.log(chalk.gray('📋 Step 2/4: Creating installation directory...'));
+      const installDir = await this.createKyutaiInstallDir();
+      console.log(chalk.green(`✅ Directory created: ${installDir}`));
+
+      // Step 3: Clone repository
+      console.log(chalk.gray('📋 Step 3/4: Cloning Kyutai repository...'));
+      console.log(chalk.yellow('⏳ This may take a few minutes...'));
+      await this.cloneKyutaiRepository(installDir);
+      console.log(chalk.green('✅ Repository cloned'));
+
+      // Step 4: Install dependencies
+      console.log(chalk.gray('📋 Step 4/4: Installing Python dependencies...'));
+      console.log(chalk.yellow('⏳ Installing PyTorch and dependencies...'));
+      await this.installKyutaiDependencies(installDir);
+      console.log(chalk.green('✅ Dependencies installed'));
+
+      console.log(chalk.green('\n🎉 Kyutai TTS installation completed!'));
+      console.log(chalk.cyan('🔄 Restarting voice selection...'));
+      
+      return true;
+    } catch (error) {
+      console.log(chalk.red(`\n❌ Installation failed: ${error.message}`));
+      console.log(chalk.yellow('💡 Please try the manual installation instead.'));
+      this.showManualInstallation();
+      return false;
+    }
+  }
+
+  async checkPythonInstallation() {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+
+    try {
+      const { stdout } = await execAsync('python --version');
+      const version = stdout.trim();
+      
+      // Check if Python version is 3.8+
+      const versionMatch = version.match(/Python (\d+)\.(\d+)/);
+      if (!versionMatch) {
+        throw new Error('Could not determine Python version');
+      }
+      
+      const major = parseInt(versionMatch[1]);
+      const minor = parseInt(versionMatch[2]);
+      
+      if (major < 3 || (major === 3 && minor < 8)) {
+        throw new Error(`Python 3.8+ required, found ${version}`);
+      }
+      
+      return version;
+    } catch (error) {
+      // Try python3 command
+      try {
+        const { stdout } = await execAsync('python3 --version');
+        return stdout.trim();
+      } catch (python3Error) {
+        throw new Error('Python 3.8+ not found. Please install Python from https://python.org');
+      }
+    }
+  }
+
+  async createKyutaiInstallDir() {
+    const os = require('os');
+    const path = require('path');
+    const fs = require('fs-extra');
+    
+    const installDir = path.join(os.homedir(), '.aiabm', 'kyutai-tts');
+    await fs.ensureDir(installDir);
+    return installDir;
+  }
+
+  async cloneKyutaiRepository(installDir) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const path = require('path');
+    
+    const repoDir = path.join(installDir, 'delayed-streams-modeling');
+    
+    // Check if repository already exists
+    const fs = require('fs-extra');
+    if (await fs.pathExists(repoDir)) {
+      console.log(chalk.yellow('📁 Repository already exists, updating...'));
+      await execAsync('git pull', { cwd: repoDir });
+      return repoDir;
+    }
+    
+    // Clone the repository
+    const repoUrl = 'https://github.com/kyutai-labs/delayed-streams-modeling.git';
+    await execAsync(`git clone ${repoUrl}`, { cwd: installDir });
+    
+    return repoDir;
+  }
+
+  async installKyutaiDependencies(installDir) {
+    const { exec } = require('child_process');
+    const { promisify } = require('util');
+    const execAsync = promisify(exec);
+    const path = require('path');
+    
+    const repoDir = path.join(installDir, 'delayed-streams-modeling');
+    
+    // Determine pip command (pip or pip3)
+    let pipCommand = 'pip';
+    try {
+      await execAsync('pip --version');
+    } catch (error) {
+      try {
+        await execAsync('pip3 --version');
+        pipCommand = 'pip3';
+      } catch (pip3Error) {
+        throw new Error('pip not found. Please install pip');
+      }
+    }
+    
+    // Install basic dependencies
+    const dependencies = [
+      'torch',
+      'torchaudio', 
+      'transformers',
+      'numpy',
+      'scipy',
+      'librosa'
+    ];
+    
+    for (const dep of dependencies) {
+      console.log(chalk.gray(`   Installing ${dep}...`));
+      await execAsync(`${pipCommand} install ${dep}`, { 
+        cwd: repoDir,
+        timeout: 300000 // 5 minutes timeout per package
+      });
+    }
+    
+    // Check if requirements.txt exists and install from it
+    const fs = require('fs-extra');
+    const requirementsPath = path.join(repoDir, 'requirements.txt');
+    if (await fs.pathExists(requirementsPath)) {
+      console.log(chalk.gray('   Installing from requirements.txt...'));
+      await execAsync(`${pipCommand} install -r requirements.txt`, { 
+        cwd: repoDir,
+        timeout: 600000 // 10 minutes timeout
+      });
+    }
   }
 
   showManualInstallation() {
