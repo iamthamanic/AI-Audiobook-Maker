@@ -149,33 +149,41 @@ Voice previews and temporary files:
 
 ## 🏗️ Kyutai TTS Setup (Local/Free)
 
-Kyutai TTS runs entirely on your machine - no API costs!
+Kyutai TTS runs entirely on your machine - no API costs! **Now with fully automated installation!**
 
-### Automatic Installation
+### 🚀 Smart Installation (Recommended)
 ```bash
 npx aiabm
-# Select "Kyutai TTS (Local, free)"
-# Choose "Install Kyutai TTS automatically"
+# Select "Kyutai TTS (Local, free)"  
+# Choose "Smart installation" 
+# → System tries all methods automatically until one works!
 ```
 
-### Manual Installation
-```bash
-# Install Python 3.10+ (required)
-python --version  # Must be 3.10 or higher
+**What happens automatically:**
+1. **📦 Conda Installation** (if available) - Best compatibility
+2. **🐍 Optimized Pip** - Precompiled wheels, CPU PyTorch
+3. **🔧 Basic Installation** - Moshi without complex dependencies
+4. **🐳 Docker Fallback** - Ultimate reliability
 
-# Clone repository  
-git clone https://github.com/kyutai-labs/delayed-streams-modeling.git ~/.aiabm/kyutai-tts/delayed-streams-modeling
-
-# Install dependencies
-cd ~/.aiabm/kyutai-tts/delayed-streams-modeling
-pip install moshi torch transformers sphn sounddevice
-```
+### 🛠️ Installation Options
+- **🚀 Smart installation** - Tries multiple methods automatically
+- **📦 Conda installation** - Uses conda for better precompiled packages
+- **🐳 Docker installation** - Completely isolated, most reliable
+- **📋 Manual installation** - For advanced users
 
 ### System Requirements
-- **Python 3.10+** (Critical - earlier versions won't work)
+- **Python 3.10+** recommended (auto-managed in virtual environment)
 - **~2GB disk space** for models and dependencies
-- **4GB+ RAM** recommended
+- **4GB+ RAM** recommended  
 - **CPU or GPU** (GPU faster but optional)
+- **Optional:** Docker Desktop for Docker installation method
+
+### 🔧 Troubleshooting
+If installation fails, the system automatically:
+- ✅ **Tries alternative methods** (conda → pip → docker)
+- ✅ **Creates isolated environments** (no system conflicts)
+- ✅ **Provides clear error messages** with solutions
+- ✅ **Falls back to OpenAI TTS** if needed
 
 ## 🛠️ Troubleshooting
 
@@ -259,6 +267,16 @@ MIT License - see LICENSE file for details
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v3.3.0 (2025-08-01)
+- 🚀 **MAJOR**: Fully automated Moshi installation - no manual setup required!
+- 📦 **Smart Installation System**: Multi-strategy approach (Conda → Optimized Pip → Basic → Docker)
+- 🐳 **Docker Integration**: Complete container isolation for 100% reliability
+- 🐍 **Virtual Environment Management**: Automatic Python environment setup
+- 🔧 **Enhanced Error Handling**: Intelligent fallbacks and clear guidance
+- 💡 **Zero-Config Setup**: Just select "Smart installation" and everything works automatically
+- 🛠️ **Multiple Installation Methods**: Conda, Docker, optimized pip, or manual
+- ✅ **Dependency Resolution**: Automatic handling of complex Python package compilation
 
 ### v3.2.0 (2025-08-01)
 - 🆓 **NEW**: Kyutai TTS integration - 100% free local text-to-speech!
