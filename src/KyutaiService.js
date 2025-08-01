@@ -326,13 +326,17 @@ Please ensure all dependencies are installed in the virtual environment.`);
         
         // Additional check for Moshi dependencies
         try {
-          await execAsync(`"${pythonCommand}" -c "import moshi"`, { timeout: 5000 });
+          console.log(chalk.gray(`🔍 Checking Moshi with Python: ${pythonCommand}`));
+          const result = await execAsync(`"${pythonCommand}" -c "import moshi; print('Moshi import successful')"`, { timeout: 5000 });
+          console.log(chalk.gray(`   Moshi check result: ${result.stdout}`));
           this.kyutaiPath = repoDir;
           this.needsDependencyInstall = false; // Clear flag on success
           console.log(chalk.green('✅ Kyutai TTS fully available'));
           return true;
         } catch (moshiError) {
           console.log(chalk.yellow('⚠️  Kyutai found but Moshi package missing'));
+          console.log(chalk.gray(`   Python path: ${pythonCommand}`));
+          console.log(chalk.gray(`   Error: ${moshiError.message}`));
           console.log(chalk.gray('   Dependencies need to be installed'));
           this.kyutaiPath = repoDir;
           this.needsDependencyInstall = true; // Flag for missing dependencies

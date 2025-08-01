@@ -676,6 +676,19 @@ class AudiobookMaker {
       timeout: 60000
     });
     
+    // Test if moshi was installed correctly
+    console.log(chalk.gray('   🔍 Testing Moshi installation...'));
+    try {
+      const testResult = await execAsync(`"${venvPython}" -c "import moshi; print('Moshi successfully installed')"`, {
+        timeout: 10000
+      });
+      console.log(chalk.green(`   ✅ ${testResult.stdout.trim()}`));
+    } catch (testError) {
+      console.log(chalk.red('   ❌ Moshi test failed:'));
+      console.log(chalk.red(`   ${testError.message}`));
+      console.log(chalk.yellow('   ⚠️  Installation may be incomplete'));
+    }
+    
     console.log(chalk.green('   ✅ Basic installation completed'));
     console.log(chalk.yellow('   ⚠️  Some advanced features may not work without sentencepiece'));
   }
