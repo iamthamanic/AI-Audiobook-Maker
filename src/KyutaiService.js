@@ -281,8 +281,8 @@ Please ensure all dependencies are installed in the virtual environment.`);
     // Check if virtual environment Python exists and has required packages
     if (await fs.pathExists(venvPython)) {
       try {
-        // Test if virtual environment has numpy (basic dependency check)
-        await execAsync(`${venvPython} -c "import numpy"`, { timeout: 5000 });
+        // Test if virtual environment has basic dependencies
+        await execAsync(`"${venvPython}" -c "import numpy"`, { timeout: 5000 });
         console.log(chalk.green('✅ Using Kyutai virtual environment Python'));
         return venvPython;
       } catch (error) {
@@ -322,12 +322,13 @@ Please ensure all dependencies are installed in the virtual environment.`);
       // Check Python and basic dependencies
       const pythonCommand = await this.getPythonCommand();
       try {
-        await execAsync(`${pythonCommand} -c "import numpy, torch"`, { timeout: 10000 });
+        await execAsync(`"${pythonCommand}" -c "import numpy, torch"`, { timeout: 10000 });
         
         // Additional check for Moshi dependencies
         try {
-          await execAsync(`${pythonCommand} -c "import moshi"`, { timeout: 5000 });
+          await execAsync(`"${pythonCommand}" -c "import moshi"`, { timeout: 5000 });
           this.kyutaiPath = repoDir;
+          this.needsDependencyInstall = false; // Clear flag on success
           console.log(chalk.green('✅ Kyutai TTS fully available'));
           return true;
         } catch (moshiError) {

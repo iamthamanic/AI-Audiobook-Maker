@@ -208,15 +208,19 @@ class AudiobookMaker {
         const shouldInstall = await this.showKyutaiInstallation();
         if (!shouldInstall) {
           console.log(chalk.blue('Switching to OpenAI TTS...'));
-          return this.getInteractiveOptions(cliOptions); // Restart selection
+          return this.getInteractiveSettings(cliOptions); // Restart selection
         }
         
-        // Re-check availability after installation
-        const available = await this.ttsService.isAvailable();
+        // Re-check availability after installation with a fresh service instance
+        const freshKyutaiService = new KyutaiService(this.configManager.getCacheDir());
+        const available = await freshKyutaiService.isAvailable();
         if (!available) {
           console.log(chalk.red('❌ Installation failed. Switching to OpenAI TTS'));
-          return this.getInteractiveOptions(cliOptions); // Restart selection
+          return this.getInteractiveSettings(cliOptions); // Restart selection
         }
+        
+        // Update our service instance to the fresh one that passed the check
+        this.ttsService = freshKyutaiService;
       }
     } catch (error) {
       console.log(chalk.red(`❌ Failed to initialize ${provider} service: ${error.message}`));
@@ -326,13 +330,12 @@ class AudiobookMaker {
     console.log(chalk.gray('┌─ First time setup (one-time) ─┐'));
     console.log(chalk.gray('│ ⚠️  Kyutai TTS runs locally    │'));
     console.log(chalk.gray('│ 📦 Size: ~2GB download        │'));
-    console.log(chalk.gray('│ 🖥️  Multiple installation options │'));
+    console.log(chalk.gray('│ 🖥️  Automatic installation available │'));
     console.log(chalk.gray('└────────────────────────────────┘\n'));
 
     const installationMethods = [
-      { name: '🚀 Smart installation (tries multiple methods)', value: 'install' },
-      { name: '📦 Try Conda installation (recommended if available)', value: 'conda' },
-      { name: '🐳 Docker installation (most reliable)', value: 'docker' },
+      { name: '🚀 Auto Install (tries all methods automatically)', value: 'auto' },
+      { name: '⚙️ Advanced Install (choose specific method)', value: 'advanced' },
       { name: '🤖 Use OpenAI TTS instead', value: 'openai' },
       { name: '📋 Show manual installation guide', value: 'manual' }
     ];
@@ -346,17 +349,51 @@ class AudiobookMaker {
       }
     ]);
 
-    if (action === 'install') {
+    if (action === 'auto') {
       return await this.installKyutai();
-    } else if (action === 'conda') {
-      return await this.installKyutaiWithConda();
-    } else if (action === 'docker') {
-      return await this.installKyutaiWithDocker();
+    } else if (action === 'advanced') {
+      return await this.showAdvancedInstallation();
     } else if (action === 'manual') {
       this.showManualInstallation();
       return false;
     } else {
       return false; // Use OpenAI instead
+    }
+  }
+
+  async showAdvancedInstallation() {
+    console.log(chalk.cyan('\n⚙️ Advanced Installation Options'));
+    console.log(chalk.gray('Choose your preferred installation method:\n'));
+
+    const advancedMethods = [
+      { name: '🚀 Smart installation (tries all methods automatically)', value: 'install' },
+      { name: '📦 Conda installation (recommended if available)', value: 'conda' },
+      { name: '🐳 Docker installation (most reliable)', value: 'docker' },
+      { name: '📋 Manual installation guide', value: 'manual' },
+      { name: '🔙 Back to main options', value: 'back' }
+    ];
+
+    const { method } = await inquirer.prompt([
+      {
+        type: 'list',
+        name: 'method',
+        message: 'Select installation method:',
+        choices: advancedMethods
+      }
+    ]);
+
+    if (method === 'install') {
+      return await this.installKyutai();
+    } else if (method === 'conda') {
+      return await this.installKyutaiWithConda();
+    } else if (method === 'docker') {
+      return await this.installKyutaiWithDocker();
+    } else if (method === 'manual') {
+      this.showManualInstallation();
+      return false;
+    } else {
+      // Back to main options
+      return await this.showKyutaiInstallation();
     }
   }
 
