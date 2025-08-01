@@ -199,6 +199,25 @@ class AudiobookMaker {
     // Initialize services based on selected provider
     try {
       await this.initializeServices(provider);
+      
+      // Check if Kyutai needs dependency installation after initialization
+      if (provider === 'kyutai' && this.ttsService.needsDependencyInstall) {
+        console.log(chalk.cyan('\n🔧 Kyutai TTS Setup Required'));
+        console.log(chalk.yellow('Dependencies need to be installed to continue with Kyutai TTS'));
+        
+        const shouldInstall = await this.showKyutaiInstallation();
+        if (!shouldInstall) {
+          console.log(chalk.blue('Switching to OpenAI TTS...'));
+          return this.getInteractiveOptions(cliOptions); // Restart selection
+        }
+        
+        // Re-check availability after installation
+        const available = await this.ttsService.isAvailable();
+        if (!available) {
+          console.log(chalk.red('❌ Installation failed. Switching to OpenAI TTS'));
+          return this.getInteractiveOptions(cliOptions); // Restart selection
+        }
+      }
     } catch (error) {
       console.log(chalk.red(`❌ Failed to initialize ${provider} service: ${error.message}`));
       return null;
@@ -231,8 +250,14 @@ class AudiobookMaker {
       // Check if Kyutai is available
       const available = await this.ttsService.isAvailable();
       if (!available) {
-        console.log(chalk.yellow('⚠️  Kyutai TTS not found or not properly installed'));
-        throw new Error('Kyutai TTS not available');
+        // If Kyutai needs dependency installation, handle it appropriately
+        if (this.ttsService.needsDependencyInstall) {
+          console.log(chalk.yellow('⚠️  Kyutai TTS dependencies need to be installed'));
+          // Don't throw error here - let the provider selection handle installation
+        } else {
+          console.log(chalk.yellow('⚠️  Kyutai TTS not found or not properly installed'));
+          throw new Error('Kyutai TTS not available');
+        }
       }
     }
 
@@ -282,7 +307,15 @@ class AudiobookMaker {
     try {
       // Create a temporary KyutaiService to check availability
       const tempKyutaiService = new KyutaiService(this.configManager.getCacheDir());
-      return await tempKyutaiService.isAvailable();
+      const isAvailable = await tempKyutaiService.isAvailable();
+      
+      // Check if we need dependency installation
+      if (!isAvailable && tempKyutaiService.needsDependencyInstall) {
+        console.log(chalk.yellow('\n⚠️  Kyutai TTS needs dependency update'));
+        return false; // Trigger installation flow
+      }
+      
+      return isAvailable;
     } catch (error) {
       return false;
     }
@@ -336,16 +369,31 @@ class AudiobookMaker {
       await this.checkPythonInstallation();
       console.log(chalk.green('✅ Python found'));
 
-      // Step 2: Create installation directory
-      console.log(chalk.gray('📋 Step 2/4: Creating installation directory...'));
+      // Step 2: Create/check installation directory
+      console.log(chalk.gray('📋 Step 2/4: Setting up installation directory...'));
       const installDir = await this.createKyutaiInstallDir();
-      console.log(chalk.green(`✅ Directory created: ${installDir}`));
+      
+      // Check if already exists
+      const fs = require('fs-extra');
+      const path = require('path');
+      const repoDir = path.join(installDir, 'delayed-streams-modeling');
+      const repoExists = await fs.pathExists(repoDir);
+      
+      if (repoExists) {
+        console.log(chalk.green('✅ Repository already exists'));
+      } else {
+        console.log(chalk.green(`✅ Directory created: ${installDir}`));
+      }
 
-      // Step 3: Clone repository
-      console.log(chalk.gray('📋 Step 3/4: Cloning Kyutai repository...'));
-      console.log(chalk.yellow('⏳ This may take a few minutes...'));
-      await this.cloneKyutaiRepository(installDir);
-      console.log(chalk.green('✅ Repository cloned'));
+      // Step 3: Clone/update repository
+      if (!repoExists) {
+        console.log(chalk.gray('📋 Step 3/4: Cloning Kyutai repository...'));
+        console.log(chalk.yellow('⏳ This may take a few minutes...'));
+        await this.cloneKyutaiRepository(installDir);
+        console.log(chalk.green('✅ Repository cloned'));
+      } else {
+        console.log(chalk.gray('📋 Step 3/4: Repository already cloned, updating dependencies...'));
+      }
 
       // Step 4: Install dependencies
       console.log(chalk.gray('📋 Step 4/4: Installing Python dependencies...'));

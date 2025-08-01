@@ -332,9 +332,10 @@ Please ensure all dependencies are installed in the virtual environment.`);
           return true;
         } catch (moshiError) {
           console.log(chalk.yellow('⚠️  Kyutai found but Moshi package missing'));
-          console.log(chalk.gray('   Complex installation required - using basic mode'));
+          console.log(chalk.gray('   Dependencies need to be installed'));
           this.kyutaiPath = repoDir;
-          return true; // Return true anyway, let the user try
+          this.needsDependencyInstall = true; // Flag for missing dependencies
+          return false; // Return false to trigger installation flow
         }
       } catch (error) {
         console.log(chalk.yellow('⚠️  Kyutai found but Python dependencies missing'));
