@@ -274,8 +274,18 @@ except Exception as e:
           console.log(chalk.red(`   stderr: ${error.stderr}`));
         }
         
-        console.log(chalk.gray('   This may indicate a virtual environment or dependency issue'));
-        console.log(chalk.yellow('   💡 Try running the app again or check the manual installation'));
+        console.log(chalk.gray('   This may indicate an incomplete or corrupted installation'));
+        console.log(chalk.yellow('   💡 Try reinstalling Fish Speech to fix this issue'));
+        
+        // Remove installation marker since the installation is incomplete
+        const installMarker = path.join(installDir, '.installation_complete');
+        try {
+          await fs.remove(installMarker);
+          console.log(chalk.gray('   Installation marker removed - will allow reinstallation'));
+        } catch (removeError) {
+          // Ignore remove errors
+        }
+        
         return false;
       }
     } catch (error) {
@@ -423,28 +433,53 @@ except Exception as e:
     const venvPip = path.join(venvDir, 'bin', 'pip');
 
     // Upgrade pip
-    await execAsync(`"${venvPython}" -m pip install --upgrade pip`);
+    console.log(chalk.gray('   Upgrading pip...'));
+    await execAsync(`"${venvPython}" -m pip install --upgrade pip`, { timeout: 120000 });
 
     // Install Fish Speech dependencies
     console.log(chalk.gray('   Installing PyTorch...'));
     await execAsync(`"${venvPip}" install torch torchaudio --index-url https://download.pytorch.org/whl/cpu`, { timeout: 300000 });
 
-    console.log(chalk.gray('   Installing Fish Speech requirements...'));
-    // First install basic dependencies
+    console.log(chalk.gray('   Installing basic dependencies...'));
     await execAsync(`"${venvPip}" install numpy scipy matplotlib`, { timeout: 120000 });
     await execAsync(`"${venvPip}" install transformers accelerate soundfile librosa`, { timeout: 300000 });
     await execAsync(`"${venvPip}" install huggingface-hub tokenizers`, { timeout: 120000 });
     
-    // Try to install from requirements.txt if it exists
-    const requirementsPath = path.join(repoDir, 'requirements.txt');
-    if (await fs.pathExists(requirementsPath)) {
-      try {
+    // Install Fish Speech package itself
+    console.log(chalk.gray('   Installing Fish Speech package...'));
+    try {
+      // First try installing from requirements.txt if it exists
+      const requirementsPath = path.join(repoDir, 'requirements.txt');
+      if (await fs.pathExists(requirementsPath)) {
+        console.log(chalk.gray('   Installing from requirements.txt...'));
         await execAsync(`"${venvPip}" install -r requirements.txt`, { 
           cwd: repoDir,
           timeout: 600000 
         });
-      } catch (error) {
-        console.log(chalk.yellow('   Some requirements failed, continuing with basic packages...'));
+      }
+      
+      // Install the Fish Speech package in development mode
+      console.log(chalk.gray('   Installing Fish Speech in development mode...'));
+      await execAsync(`"${venvPip}" install -e .`, { 
+        cwd: repoDir,
+        timeout: 600000 
+      });
+      
+    } catch (error) {
+      console.log(chalk.yellow('   Requirements installation failed, trying alternative approach...'));
+      
+      // Fallback: Install essential packages manually
+      console.log(chalk.gray('   Installing essential packages manually...'));
+      await execAsync(`"${venvPip}" install einops fire hydra-core omegaconf rich typer natsort Cython`, { timeout: 300000 });
+      
+      // Try to install Fish Speech package directly
+      try {
+        await execAsync(`"${venvPip}" install -e .`, { 
+          cwd: repoDir,
+          timeout: 600000 
+        });
+      } catch (fallbackError) {
+        console.log(chalk.yellow('   Could not install Fish Speech package, but continuing...'));
       }
     }
   }
