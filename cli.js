@@ -7,21 +7,23 @@ const path = require('path');
 const AudiobookMaker = require('./src/AudiobookMaker');
 
 async function main() {
-  console.log(chalk.cyan(`
+  console.log(
+    chalk.cyan(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║                🎧 AI AUDIOBOOK MAKER v3.3.6 🎧                ║
+║                🎧 AI AUDIOBOOK MAKER v4.0.1 🎧                ║
 ║                                                               ║
 ║            Transform PDFs & Text into Audiobooks             ║
-║              OpenAI TTS & Kyutai TTS (Local/Free)            ║
+║         OpenAI TTS, Fish Speech & Thorsten-Voice TTS         ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
-  `));
+  `)
+  );
 
   program
     .name('aiabm')
     .description('AI Audiobook Maker - Convert PDFs and text files to audiobooks')
-    .version('3.3.6')
+    .version('4.0.0')
     .argument('[file]', 'Path to PDF or text file to convert')
     .option('-v, --voice <voice>', 'Voice to use (alloy, echo, fable, onyx, nova, shimmer)')
     .option('-s, --speed <speed>', 'Speech speed (0.25-4.0)', '1.0')
@@ -50,17 +52,16 @@ async function main() {
         console.log(chalk.red(`❌ File not found: ${filePath}`));
         process.exit(1);
       }
-      
+
       await maker.processFile(filePath, {
         voice: options.voice,
         speed: parseFloat(options.speed),
-        model: options.model
+        model: options.model,
       });
     } else {
       // Interactive mode
       await maker.runInteractive();
     }
-
   } catch (error) {
     console.error(chalk.red(`❌ Error: ${error.message}`));
     process.exit(1);

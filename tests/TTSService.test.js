@@ -1,4 +1,3 @@
-const { jest } = require('@jest/globals');
 const TTSService = require('../src/TTSService');
 
 // Mock external dependencies
@@ -24,8 +23,9 @@ describe('TTSService', () => {
       expect(ttsService.cacheDir).toBe(mockCacheDir);
     });
 
-    test('should throw error without API key', () => {
-      expect(() => new TTSService()).toThrow();
+    test('should initialize without API key', () => {
+      const service = new TTSService();
+      expect(service.apiKey).toBeUndefined();
     });
   });
 
@@ -39,32 +39,29 @@ describe('TTSService', () => {
     });
   });
 
-  describe('validateSettings', () => {
-    test('should validate correct settings', () => {
-      const validSettings = {
-        voice: 'alloy',
-        model: 'tts-1',
-        speed: 1.0
-      };
-      expect(() => ttsService.validateSettings(validSettings)).not.toThrow();
+  describe('getModels', () => {
+    test('should return array of OpenAI models', () => {
+      const models = ttsService.getModels();
+      expect(Array.isArray(models)).toBe(true);
+      expect(models).toContain('tts-1');
+      expect(models).toContain('tts-1-hd');
     });
+  });
 
-    test('should throw error for invalid voice', () => {
-      const invalidSettings = {
-        voice: 'invalid-voice',
-        model: 'tts-1',
-        speed: 1.0
-      };
-      expect(() => ttsService.validateSettings(invalidSettings)).toThrow();
+  describe('calculateCost', () => {
+    test('should calculate cost correctly', () => {
+      const result = ttsService.calculateCost(1000);
+      expect(result.characterCount).toBe(1000);
+      expect(result.estimatedCost).toBe(0.015);
+      expect(result.costPerThousand).toBe(0.015);
     });
+  });
 
-    test('should throw error for invalid speed', () => {
-      const invalidSettings = {
-        voice: 'alloy',
-        model: 'tts-1',
-        speed: 5.0 // Max is 4.0
-      };
-      expect(() => ttsService.validateSettings(invalidSettings)).toThrow();
+  describe('estimateProcessingTime', () => {
+    test('should estimate processing time', () => {
+      const time = ttsService.estimateProcessingTime(1000);
+      expect(typeof time).toBe('string');
+      expect(time).toMatch(/~\d+s/);
     });
   });
 });

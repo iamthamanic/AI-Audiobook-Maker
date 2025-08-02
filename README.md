@@ -1,26 +1,28 @@
-# 🎧 AI Audiobook Maker (AIABM)
+# 🎧 AI Audiobook Maker (AIABM) v4.0.1
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/ai-audiobook-maker.svg)](https://nodejs.org)
 
-Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud) or **Kyutai TTS** (local/free). Choose between premium cloud voices or run everything locally at no cost!
+Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud), **Fish Speech** (local/SOTA), or **Thorsten-Voice** (native German). Choose between premium cloud voices or run everything locally at no cost!
 
 ## ✨ Features
 
-### 🎙️ **Dual TTS Providers**
+### 🎙️ **Triple TTS Providers**
 - **☁️ OpenAI TTS**: Premium cloud voices (requires API key)
-- **🆓 Kyutai TTS**: Free local processing (no API costs)
+- **🐟 Fish Speech**: State-of-the-art local TTS with multilingual support
+- **🇩🇪 Thorsten-Voice**: Native German TTS with authentic pronunciation
 
 ### 🚀 **Core Features**
 - **🚀 Zero Installation**: Run directly with `npx aiabm`
 - **📁 Smart File Handling**: Supports PDF and TXT files with drag & drop
-- **🎤 Voice Preview**: Listen to voices before choosing (15+ Kyutai + 6 OpenAI)
+- **🎤 Voice Preview**: Listen to voices before choosing (8 Fish Speech + 2 Thorsten + 6 OpenAI)
 - **⏸️ Resume & Pause**: Continue interrupted conversions anytime
 - **🔐 Secure API Key Management**: Encrypted local storage
 - **📊 Progress Tracking**: Real-time conversion progress with estimates
 - **🎛️ Advanced Controls**: Adjust speed, quality, and output format
-- **💰 Cost Transparency**: See exact pricing (OpenAI) or run free (Kyutai)
+- **💰 Cost Transparency**: See exact pricing (OpenAI) or run free (local providers)
+- **🔧 Smart Installation**: Automatic setup for local TTS providers
 
 ## 🚀 Quick Start
 
@@ -45,9 +47,10 @@ aiabm mybook.pdf
 - **Node.js 16+** (Download from [nodejs.org](https://nodejs.org/))
 - **FFmpeg** (for audio combining - auto-installed on most systems)
 
-### Optional (Choose One or Both)
+### Optional (Choose One or More)
 - **OpenAI API Key** (Get from [platform.openai.com](https://platform.openai.com/account/api-keys)) - For cloud TTS
-- **Python 3.10+** (For Kyutai TTS local processing) - For free local TTS
+- **Python 3.8+** (For Fish Speech local processing) - For multilingual local TTS
+- **Python 3.9-3.11** (For Thorsten-Voice) - For native German TTS
 
 ## 🎯 Usage Examples
 
@@ -56,7 +59,7 @@ aiabm mybook.pdf
 # Basic conversion
 npx aiabm document.pdf
 
-# With specific options
+# With specific options (OpenAI)
 npx aiabm book.txt --voice nova --speed 1.2 --model tts-1-hd
 
 # Manage API key
@@ -68,10 +71,12 @@ npx aiabm --config
 npx aiabm
 ```
 Then follow the interactive prompts to:
-1. Select your file (browse, drag & drop, or enter path)
-2. Preview and choose a voice
-3. Configure settings (speed, quality, output format)
-4. Monitor progress and resume if needed
+1. **Select TTS Provider** (OpenAI, Fish Speech, or Thorsten-Voice)
+2. **Auto-install local providers** if needed (one-time setup)
+3. **Select your file** (browse, drag & drop, or enter path)
+4. **Preview and choose a voice**
+5. **Configure settings** (speed, quality, output format)
+6. **Monitor progress** and resume if needed
 
 ## 🎤 Available Voices
 
@@ -83,12 +88,19 @@ Then follow the interactive prompts to:
 - **Nova**: Bright, engaging
 - **Shimmer**: Gentle, soothing
 
-### 🆓 Kyutai TTS (Local/Free)
-- **VCTK Voices**: English speakers (p225, p226, p227, etc.)
-- **Expresso**: Conversational styles (Happy, Narration, Confused)
-- **EARS**: Natural speech patterns (Calm, Energetic)
-- **French Voices**: Native French speakers
-- **Custom Cloning**: Clone any voice from audio sample
+### 🐟 Fish Speech (Local/Multilingual)
+- **🇩🇪 German Female (Natural)**: High-quality German synthesis
+- **🇩🇪 German Male (Clear)**: Professional German voice
+- **🇩🇪 German Female (Expressive)**: Emotional German narration
+- **🇺🇸 English Female (Warm)**: Natural English voice
+- **🇺🇸 English Male (Professional)**: Business-quality English
+- **🇺🇸 English Female (Energetic)**: Dynamic storytelling
+- **🇫🇷 French Female (Elegant)**: Sophisticated French accent
+- **🇫🇷 French Male (Sophisticated)**: Professional French voice
+
+### 🇩🇪 Thorsten-Voice (Native German)
+- **🇩🇪 Thorsten (Authentic German Male)**: High-quality native German voice
+- **🇩🇪 Thorsten Emotional (German Male)**: German voice with emotional expression
 
 ## 💰 Pricing
 
@@ -102,8 +114,62 @@ Then follow the interactive prompts to:
 | 100,000 characters | ~$1.50 | Average novel |
 | 250,000 characters | ~$3.75 | Large book |
 
-### Kyutai TTS
+### Fish Speech & Thorsten-Voice
 **100% FREE** - No API costs, runs entirely on your machine!
+
+## 🔧 Local TTS Setup
+
+Both Fish Speech and Thorsten-Voice run entirely on your machine - no API costs! **Now with fully automated installation!**
+
+### 🚀 Smart Installation (Recommended)
+```bash
+npx aiabm
+# Select "Fish Speech" or "Thorsten-Voice"
+# Choose "Auto Install (recommended)"
+# → System automatically downloads and configures everything!
+```
+
+### 🐟 Fish Speech Setup
+**What happens automatically:**
+1. **📦 Repository Cloning** - Downloads latest Fish Speech
+2. **🐍 Virtual Environment** - Creates isolated Python environment  
+3. **⚡ PyTorch Installation** - Installs optimized CPU version
+4. **🤖 Model Download** - Downloads Fish Speech 1.2 models (~1GB)
+5. **✅ Dependency Check** - Verifies installation works
+
+**System Requirements:**
+- **Python 3.8+** recommended
+- **~2GB disk space** for models and dependencies
+- **4GB+ RAM** recommended  
+- **CPU or GPU** (GPU faster but optional)
+
+### 🇩🇪 Thorsten-Voice Setup
+**What happens automatically:**
+1. **🐍 Compatible Python Detection** - Finds Python 3.9-3.11
+2. **📦 Virtual Environment** - Creates isolated environment
+3. **🎤 Coqui TTS Installation** - Installs German TTS framework
+4. **🤖 Thorsten Model** - Downloads German voice model (~500MB)
+5. **✅ Compatibility Check** - Verifies everything works
+
+**System Requirements:**
+- **Python 3.9-3.11** (NOT 3.12+, NOT 3.13+)
+- **~1GB disk space** for models and dependencies
+- **2GB+ RAM** recommended
+
+**Python Version Issues?**
+```bash
+# Install compatible Python on macOS
+brew install python@3.11
+
+# On Ubuntu/Debian
+sudo apt install python3.11 python3.11-venv
+```
+
+### 🔧 Installation Status Tracking
+- **✅ Smart Detection**: Avoids re-installation if already installed
+- **📅 Version Tracking**: Shows installation date and version
+- **🔄 Update Suggestions**: Recommends updates after 30+ days
+- **🛠️ Installation Markers**: Persistent installation state
 
 ## 🔧 Advanced Features
 
@@ -147,43 +213,10 @@ Voice previews and temporary files:
 - **macOS/Linux**: `~/.config/ai-audiobook-maker/cache/`
 - **Windows**: `%APPDATA%\ai-audiobook-maker\cache\`
 
-## 🏗️ Kyutai TTS Setup (Local/Free)
-
-Kyutai TTS runs entirely on your machine - no API costs! **Now with fully automated installation!**
-
-### 🚀 Smart Installation (Recommended)
-```bash
-npx aiabm
-# Select "Kyutai TTS (Local, free)"  
-# Choose "Smart installation" 
-# → System tries all methods automatically until one works!
-```
-
-**What happens automatically:**
-1. **📦 Conda Installation** (if available) - Best compatibility
-2. **🐍 Optimized Pip** - Precompiled wheels, CPU PyTorch
-3. **🔧 Basic Installation** - Moshi without complex dependencies
-4. **🐳 Docker Fallback** - Ultimate reliability
-
-### 🛠️ Installation Options
-- **🚀 Smart installation** - Tries multiple methods automatically
-- **📦 Conda installation** - Uses conda for better precompiled packages
-- **🐳 Docker installation** - Completely isolated, most reliable
-- **📋 Manual installation** - For advanced users
-
-### System Requirements
-- **Python 3.10+** recommended (auto-managed in virtual environment)
-- **~2GB disk space** for models and dependencies
-- **4GB+ RAM** recommended  
-- **CPU or GPU** (GPU faster but optional)
-- **Optional:** Docker Desktop for Docker installation method
-
-### 🔧 Troubleshooting
-If installation fails, the system automatically:
-- ✅ **Tries alternative methods** (conda → pip → docker)
-- ✅ **Creates isolated environments** (no system conflicts)
-- ✅ **Provides clear error messages** with solutions
-- ✅ **Falls back to OpenAI TTS** if needed
+### Local TTS Installations
+Local TTS providers are installed to:
+- **Fish Speech**: `~/.aiabm/fish-speech/`
+- **Thorsten-Voice**: `~/.aiabm/thorsten-voice/`
 
 ## 🛠️ Troubleshooting
 
@@ -210,6 +243,16 @@ sudo apt install ffmpeg
 - Text: Maximum 1M characters
 - Split large files before conversion
 
+**"Fish Speech dependencies missing"**
+- Check Python version: `python3 --version`
+- Try restarting the app
+- Virtual environment issues usually resolve on restart
+
+**"Thorsten-Voice requires Python 3.9-3.11"**
+- Install compatible Python: `brew install python@3.11`
+- App will automatically detect and use it
+- Creates separate virtual environment
+
 **Voice preview not playing**
 - macOS: Uses built-in `afplay`
 - Windows: Uses PowerShell media player
@@ -219,37 +262,41 @@ sudo apt install ffmpeg
 
 - Use `tts-1` model for faster processing
 - Use `tts-1-hd` for higher quality (slower)
+- Local TTS providers are free but slower than cloud
 - Cache clears automatically after 30 days
 - Resume feature prevents re-processing completed chunks
 
 ## 🔒 Privacy & Security
 
 - API keys are encrypted locally using AES-192
-- No data is sent to servers other than OpenAI
+- No data is sent to servers when using local TTS
+- OpenAI TTS sends only text chunks to OpenAI servers
 - Cache files are stored locally only
 - Session data helps resume interrupted conversions
+- Local TTS models run entirely offline
 
 ## 📖 Examples
 
-### Converting a PDF Book
+### Converting a PDF Book with German Voice
 ```bash
-npx aiabm "My Great Novel.pdf"
+npx aiabm "Mein Roman.pdf"
+# Select "Thorsten-Voice"
+# Choose German voice
+# Enjoy authentic German pronunciation!
 ```
 
-### Interactive Voice Selection
+### Interactive Multilingual Setup
 ```bash
 npx aiabm
-# Select "Preview all voices"
-# Listen to each voice sample
-# Choose your favorite
-# Configure speed and quality
-# Start conversion
+# Select "Fish Speech"
+# Auto-install if needed
+# Preview German, English, and French voices
+# Choose your favorite for the content language
 ```
 
-### Batch Processing Tips
+### Quick OpenAI Conversion
 ```bash
-# Process multiple files
-for file in *.pdf; do npx aiabm "$file" --voice nova --speed 1.1; done
+npx aiabm document.pdf --voice nova --speed 1.1
 ```
 
 ## 🤝 Contributing
@@ -262,45 +309,39 @@ MIT License - see LICENSE file for details
 
 ## 🙏 Acknowledgments
 
-- Built on OpenAI's TTS API and Kyutai TTS
-- Inspired by the original bash script version
+- Built on OpenAI's TTS API, Fish Speech, and Thorsten-Voice/Coqui TTS
+- Fish Speech: https://github.com/fishaudio/fish-speech
+- Thorsten-Voice: https://github.com/thorstenMueller/Thorsten-Voice
+- Coqui TTS: https://github.com/coqui-ai/TTS
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
 
-### v3.3.0 (2025-08-01)
-- 🚀 **MAJOR**: Fully automated Moshi installation - no manual setup required!
-- 📦 **Smart Installation System**: Multi-strategy approach (Conda → Optimized Pip → Basic → Docker)
-- 🐳 **Docker Integration**: Complete container isolation for 100% reliability
-- 🐍 **Virtual Environment Management**: Automatic Python environment setup
-- 🔧 **Enhanced Error Handling**: Intelligent fallbacks and clear guidance
-- 💡 **Zero-Config Setup**: Just select "Smart installation" and everything works automatically
-- 🛠️ **Multiple Installation Methods**: Conda, Docker, optimized pip, or manual
-- ✅ **Dependency Resolution**: Automatic handling of complex Python package compilation
+### v4.0.1 (2025-08-02) - 🔧 Installation & Compatibility Fixes
+- 🔧 **Fixed Fish Speech virtual environment usage** - Proper dependency checking
+- 🐍 **Enhanced Python version detection** - Blocks Thorsten-Voice on Python 3.13+
+- ✅ **Smart installation status tracking** - Avoids unnecessary re-installations  
+- 📅 **Installation markers** - Persistent installation state with version info
+- 🔄 **Better error handling** - More informative error messages and recovery
+- 💡 **Improved user guidance** - Clear instructions for Python compatibility issues
 
-### v3.2.0 (2025-08-01)
-- 🆓 **NEW**: Kyutai TTS integration - 100% free local text-to-speech!
-- 🎤 **15+ New Voices**: VCTK, Expresso, EARS, and French voice datasets
-- 🏗️ **Auto Installation**: Automatic Kyutai setup with dependency management
-- 🔄 **Provider Selection**: Choose between OpenAI (cloud) or Kyutai (local)
-- 🎯 **Voice Cloning**: Support for custom voice cloning (Kyutai)
-- 📊 **Enhanced UI**: Updated startup banner and provider selection
-- 🔧 **Improved Error Handling**: Better dependency detection and user guidance
-- 🌍 **Multilingual**: Added French TTS support via Kyutai
+### v4.0.0 (2025-08-02) - 🌟 Major Refactoring
+- 🗑️ **REMOVED**: Kyutai TTS (replaced due to Python 3.13 compatibility issues)
+- 🐟 **NEW**: Fish Speech integration - State-of-the-art multilingual TTS
+- 🇩🇪 **NEW**: Thorsten-Voice integration - Native German TTS
+- 🎤 **Enhanced Voice Selection**: 16 total voices across 3 providers
+- 🏗️ **Automated Installation**: One-click setup for local TTS providers
+- 🔧 **Improved Architecture**: Better service abstraction and error handling
+- 📊 **Enhanced Testing**: 80%+ test coverage with Jest
+- 🛠️ **Code Quality Tools**: ESLint, Prettier, Snyk integration
+- 🔄 **Backward Compatibility**: 100% compatibility with existing OpenAI workflows
 
-### v2.0.1 (2025-07-31)
-- 🔧 Fixed CLI command back to `aiabm` as originally intended
-- 📝 Updated documentation to reflect correct command usage
-
-### v2.0.0 (2025-07-31)
-- 🎨 Renamed npm package to `ai-audiobook-maker` for better discoverability
-- ⌨️  CLI command remains `aiabm` for convenience
-- 📦 Improved package structure and metadata
-- 🔧 Added proper .gitignore and .npmignore files
-- 📄 Added MIT LICENSE file
-- 📚 Updated documentation and installation instructions
-- 🚀 Ready for npm publishing
+### v3.3.0 (2025-08-01) - 🚀 Kyutai Integration (Deprecated)
+- 🆓 Kyutai TTS integration (now removed in v4.0.0)
+- 🏗️ Automated installation system
+- 🎤 15+ voice options
+- 🔄 Provider selection system
 
 ---
 
-**Happy listening! 🎧** Turn any text into your personal audiobook library.
+**Happy listening! 🎧** Turn any text into your personal audiobook library with the best TTS technology available.

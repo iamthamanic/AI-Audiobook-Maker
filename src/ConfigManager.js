@@ -36,35 +36,35 @@ class ConfigManager {
 
   encryptConfig(config) {
     if (!config.apiKey) return config;
-    
+
     try {
       const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipher('aes-256-cbc', key);
-      
+
       let encrypted = cipher.update(config.apiKey, 'utf8', 'hex');
       encrypted += cipher.final('hex');
-      
+
       return {
         ...config,
-        apiKey: `${iv.toString('hex')}:${encrypted}`
+        apiKey: `${iv.toString('hex')}:${encrypted}`,
       };
     } catch (error) {
       // Fallback to base64 encoding if crypto fails
       console.log(chalk.yellow('⚠️  Using basic encoding for API key storage'));
       return {
         ...config,
-        apiKey: `basic:${Buffer.from(config.apiKey).toString('base64')}`
+        apiKey: `basic:${Buffer.from(config.apiKey).toString('base64')}`,
       };
     }
   }
 
   decryptConfig(config) {
     if (!config.apiKey || !config.apiKey.includes(':')) return config;
-    
+
     try {
       const parts = config.apiKey.split(':');
-      
+
       if (parts[0] === 'basic') {
         // Base64 encoded
         const decrypted = Buffer.from(parts[1], 'base64').toString('utf8');
@@ -78,7 +78,7 @@ class ConfigManager {
         decrypted += decipher.final('utf8');
         return { ...config, apiKey: decrypted };
       }
-      
+
       return config;
     } catch (error) {
       console.log(chalk.yellow('⚠️  Could not decrypt API key, please re-enter'));
@@ -103,8 +103,8 @@ class ConfigManager {
             return 'OpenAI API keys typically start with "sk-"';
           }
           return true;
-        }
-      }
+        },
+      },
     ]);
 
     const config = await this.getConfig();
@@ -120,7 +120,7 @@ class ConfigManager {
     const hasKey = !!config.apiKey;
 
     console.log(chalk.cyan('\n🔧 API Key Management'));
-    
+
     const { action } = await inquirer.prompt([
       {
         type: 'list',
@@ -130,9 +130,9 @@ class ConfigManager {
           { name: hasKey ? 'Update API Key' : 'Set API Key', value: 'set' },
           ...(hasKey ? [{ name: 'Test API Key', value: 'test' }] : []),
           ...(hasKey ? [{ name: 'Remove API Key', value: 'remove' }] : []),
-          { name: 'Back to main menu', value: 'back' }
-        ]
-      }
+          { name: 'Back to main menu', value: 'back' },
+        ],
+      },
     ]);
 
     switch (action) {
@@ -158,7 +158,7 @@ class ConfigManager {
     }
 
     console.log(chalk.yellow('🔄 Testing API key...'));
-    
+
     try {
       const axios = require('axios');
       const response = await axios.post(
@@ -166,10 +166,10 @@ class ConfigManager {
         {},
         {
           headers: {
-            'Authorization': `Bearer ${config.apiKey}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${config.apiKey}`,
+            'Content-Type': 'application/json',
           },
-          timeout: 10000
+          timeout: 10000,
         }
       );
 
@@ -193,8 +193,8 @@ class ConfigManager {
         type: 'confirm',
         name: 'confirm',
         message: 'Are you sure you want to remove the API key?',
-        default: false
-      }
+        default: false,
+      },
     ]);
 
     if (confirm) {

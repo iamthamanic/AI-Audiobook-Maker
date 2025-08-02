@@ -12,16 +12,12 @@ class TTSService {
     this.baseURL = 'https://api.openai.com/v1/audio/speech';
     this.voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
     this.models = ['tts-1', 'tts-1-hd'];
-    this.previewText = 'This is a Story about transkription and fiction. Das ist eine Geschichte über Transkription und Fiktion.';
+    this.previewText =
+      'This is a Story about transkription and fiction. Das ist eine Geschichte über Transkription und Fiktion.';
   }
 
   async generateSpeech(text, options = {}) {
-    const {
-      voice = 'alloy',
-      model = 'tts-1',
-      speed = 1.0,
-      format = 'mp3'
-    } = options;
+    const { voice = 'alloy', model = 'tts-1', speed = 1.0, format = 'mp3' } = options;
 
     if (!this.voices.includes(voice)) {
       throw new Error(`Invalid voice: ${voice}. Available: ${this.voices.join(', ')}`);
@@ -43,15 +39,15 @@ class TTSService {
           input: text,
           voice,
           speed,
-          response_format: format
+          response_format: format,
         },
         {
           headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            'Content-Type': 'application/json'
+            Authorization: `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
           },
           responseType: 'arraybuffer',
-          timeout: 60000 // 1 minute timeout
+          timeout: 60000, // 1 minute timeout
         }
       );
 
@@ -87,20 +83,20 @@ class TTSService {
 
     // Generate preview
     const spinner = ora(`Generating preview for ${voice}...`).start();
-    
+
     try {
-      const audioBuffer = await this.generateSpeech(this.previewText, { 
-        ...options, 
+      const audioBuffer = await this.generateSpeech(this.previewText, {
+        ...options,
         voice,
-        model: 'tts-1' // Use faster model for previews
+        model: 'tts-1', // Use faster model for previews
       });
 
       // Ensure preview directory exists
       await fs.ensureDir(path.dirname(cachedFile));
-      
+
       // Save to cache
       await fs.writeFile(cachedFile, audioBuffer);
-      
+
       spinner.succeed(`Preview ready for ${voice}`);
       return cachedFile;
     } catch (error) {
@@ -111,7 +107,7 @@ class TTSService {
 
   async generateAllPreviews(options = {}) {
     console.log(chalk.cyan('\n🎵 Generating voice previews...'));
-    
+
     const previews = {};
     const errors = [];
 
@@ -119,7 +115,7 @@ class TTSService {
     const concurrency = 3;
     for (let i = 0; i < this.voices.length; i += concurrency) {
       const batch = this.voices.slice(i, i + concurrency);
-      
+
       const batchPromises = batch.map(async (voice) => {
         try {
           const previewFile = await this.generateVoicePreview(voice, options);
@@ -149,51 +145,45 @@ class TTSService {
   }
 
   async processTextChunks(chunks, options = {}, onProgress = null) {
-    const {
-      voice = 'alloy',
-      model = 'tts-1',
-      speed = 1.0,
-      outputDir = './output'
-    } = options;
+    const { voice = 'alloy', model = 'tts-1', speed = 1.0, outputDir = './output' } = options;
 
     await fs.ensureDir(outputDir);
-    
+
     const audioFiles = [];
     const totalChunks = chunks.length;
-    
+
     console.log(chalk.cyan(`\n🎙️ Converting ${totalChunks} chunks to audio...`));
     console.log(chalk.gray(`Voice: ${voice} | Model: ${model} | Speed: ${speed}x\n`));
 
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
       const chunkNumber = i + 1;
-      
+
       const spinner = ora(`Processing chunk ${chunkNumber}/${totalChunks}...`).start();
-      
+
       try {
         const audioBuffer = await this.generateSpeech(chunk, { voice, model, speed });
         const fileName = `chunk_${chunkNumber.toString().padStart(3, '0')}.mp3`;
         const filePath = path.join(outputDir, fileName);
-        
+
         await fs.writeFile(filePath, audioBuffer);
         audioFiles.push(filePath);
-        
+
         spinner.succeed(`Chunk ${chunkNumber}/${totalChunks} completed`);
-        
+
         if (onProgress) {
           onProgress({
             current: chunkNumber,
             total: totalChunks,
             percentage: Math.round((chunkNumber / totalChunks) * 100),
-            filePath
+            filePath,
           });
         }
 
         // Small delay to avoid rate limiting
         if (i < chunks.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        
       } catch (error) {
         spinner.fail(`Chunk ${chunkNumber} failed: ${error.message}`);
         throw error;
@@ -216,15 +206,15 @@ class TTSService {
         await execAsync('ffmpeg -version');
       } catch (error) {
         spinner.fail('FFmpeg not found. Please install FFmpeg to combine audio files.');
-        throw new Error('FFmpeg is required to combine audio files. Install it from https://ffmpeg.org/');
+        throw new Error(
+          'FFmpeg is required to combine audio files. Install it from https://ffmpeg.org/'
+        );
       }
 
       // Create a temporary file list for ffmpeg
       const fileListPath = path.join(path.dirname(outputPath), 'file_list.txt');
-      const fileListContent = audioFiles
-        .map(file => `file '${path.resolve(file)}'`)
-        .join('\n');
-      
+      const fileListContent = audioFiles.map((file) => `file '${path.resolve(file)}'`).join('\n');
+
       await fs.writeFile(fileListPath, fileListContent);
 
       // Use ffmpeg to concatenate
@@ -233,7 +223,7 @@ class TTSService {
 
       // Cleanup
       await fs.remove(fileListPath);
-      
+
       spinner.succeed('Audio files combined successfully');
       return outputPath;
     } catch (error) {
@@ -264,10 +254,10 @@ class TTSService {
     // Rough estimates based on OpenAI TTS performance
     const charsPerSecond = model === 'tts-1-hd' ? 50 : 100;
     const estimatedSeconds = Math.ceil(characterCount / charsPerSecond);
-    
+
     const minutes = Math.floor(estimatedSeconds / 60);
     const seconds = estimatedSeconds % 60;
-    
+
     if (minutes > 0) {
       return `~${minutes}m ${seconds}s`;
     } else {
@@ -281,7 +271,7 @@ class TTSService {
       characterCount,
       estimatedCost: (characterCount / 1000) * costPerThousand,
       costPerThousand,
-      model
+      model,
     };
   }
 }

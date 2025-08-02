@@ -1,7 +1,7 @@
 {
   "name": "aiabm",
-  "version": "3.3.6",
-  "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS or Kyutai TTS (local/free)",
+  "version": "4.0.1",
+  "description": "AI Audiobook Maker - Convert PDFs and text files to audiobooks using OpenAI TTS, Fish Speech (local/SOTA), or Thorsten-Voice (native German)",
   "main": "src/AudiobookMaker.js",
   "bin": {
     "aiabm": "cli.js"
@@ -21,8 +21,10 @@
     "tts",
     "text-to-speech",
     "openai",
-    "kyutai",
+    "fish-speech",
+    "thorsten-voice",
     "local-tts",
+    "german-tts",
     "pdf",
     "cli",
     "terminal",

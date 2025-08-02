@@ -9,13 +9,15 @@ class FileHandler {
     this.supportedExtensions = ['.txt', '.pdf'];
     this.maxFileSizes = {
       '.pdf': 50 * 1024 * 1024, // 50MB
-      '.txt': 1000000 * 4 // ~1M characters (assuming 4 bytes per char max)
+      '.txt': 1000000 * 4, // ~1M characters (assuming 4 bytes per char max)
     };
   }
 
   async selectFile() {
     console.log(chalk.cyan('\n📁 File Selection'));
-    console.log(chalk.gray('Supported formats: PDF, TXT (up to 50MB for PDF, 1M characters for TXT)\n'));
+    console.log(
+      chalk.gray('Supported formats: PDF, TXT (up to 50MB for PDF, 1M characters for TXT)\n')
+    );
 
     // Check if there are recent files in the current directory
     const currentDir = process.cwd();
@@ -25,7 +27,7 @@ class FileHandler {
       { name: '📂 Browse for file', value: 'browse' },
       ...(recentFiles.length > 0 ? [{ name: '📋 Select from recent files', value: 'recent' }] : []),
       { name: '✏️  Enter file path manually', value: 'manual' },
-      { name: '🔙 Back to main menu', value: 'back' }
+      { name: '🔙 Back to main menu', value: 'back' },
     ];
 
     const { method } = await inquirer.prompt([
@@ -33,8 +35,8 @@ class FileHandler {
         type: 'list',
         name: 'method',
         message: 'How would you like to select your file?',
-        choices
-      }
+        choices,
+      },
     ]);
 
     switch (method) {
@@ -54,26 +56,24 @@ class FileHandler {
       const files = await fs.readdir(dir);
       const fileStats = await Promise.all(
         files
-          .filter(file => this.supportedExtensions.includes(path.extname(file).toLowerCase()))
-          .map(async file => {
+          .filter((file) => this.supportedExtensions.includes(path.extname(file).toLowerCase()))
+          .map(async (file) => {
             const filePath = path.join(dir, file);
             const stats = await fs.stat(filePath);
             return { name: file, path: filePath, mtime: stats.mtime };
           })
       );
 
-      return fileStats
-        .sort((a, b) => b.mtime - a.mtime)
-        .slice(0, 5);
+      return fileStats.sort((a, b) => b.mtime - a.mtime).slice(0, 5);
     } catch (error) {
       return [];
     }
   }
 
   async selectFromRecentFiles(recentFiles) {
-    const choices = recentFiles.map(file => ({
+    const choices = recentFiles.map((file) => ({
       name: `${file.name} (${this.formatFileSize(file.path)})`,
-      value: file.path
+      value: file.path,
     }));
 
     choices.push({ name: '🔙 Back', value: 'back' });
@@ -83,8 +83,8 @@ class FileHandler {
         type: 'list',
         name: 'selectedFile',
         message: 'Select a file:',
-        choices
-      }
+        choices,
+      },
     ]);
 
     if (selectedFile === 'back') return null;
@@ -103,11 +103,11 @@ class FileHandler {
         message: 'Drop file here or enter path:',
         validate: async (input) => {
           if (!input) return 'Please provide a file path';
-          
+
           // Clean up the path (remove quotes, etc.)
           const cleanPath = this.cleanFilePath(input);
-          
-          if (!await fs.pathExists(cleanPath)) {
+
+          if (!(await fs.pathExists(cleanPath))) {
             return 'File does not exist';
           }
 
@@ -118,8 +118,8 @@ class FileHandler {
 
           return true;
         },
-        filter: (input) => this.cleanFilePath(input)
-      }
+        filter: (input) => this.cleanFilePath(input),
+      },
     ]);
 
     return filePath;
@@ -133,10 +133,10 @@ class FileHandler {
         message: 'Enter file path:',
         validate: async (input) => {
           if (!input) return 'Please provide a file path';
-          
+
           const cleanPath = this.cleanFilePath(input);
-          
-          if (!await fs.pathExists(cleanPath)) {
+
+          if (!(await fs.pathExists(cleanPath))) {
             return 'File does not exist';
           }
 
@@ -147,8 +147,8 @@ class FileHandler {
 
           return true;
         },
-        filter: (input) => this.cleanFilePath(input)
-      }
+        filter: (input) => this.cleanFilePath(input),
+      },
     ]);
 
     return filePath;
@@ -166,13 +166,13 @@ class FileHandler {
     try {
       const stats = fs.statSync(filePath);
       const bytes = stats.size;
-      
+
       if (bytes === 0) return '0 Bytes';
-      
+
       const k = 1024;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
       const i = Math.floor(Math.log(bytes) / Math.log(k));
-      
+
       return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     } catch (error) {
       return 'Unknown size';
@@ -187,7 +187,7 @@ class FileHandler {
       if (!this.supportedExtensions.includes(ext)) {
         return {
           valid: false,
-          error: `Unsupported file type. Supported: ${this.supportedExtensions.join(', ')}`
+          error: `Unsupported file type. Supported: ${this.supportedExtensions.join(', ')}`,
         };
       }
 
@@ -196,7 +196,7 @@ class FileHandler {
         const maxSizeFormatted = ext === '.pdf' ? '50MB' : '1M characters';
         return {
           valid: false,
-          error: `File too large. Maximum size for ${ext.toUpperCase()}: ${maxSizeFormatted}`
+          error: `File too large. Maximum size for ${ext.toUpperCase()}: ${maxSizeFormatted}`,
         };
       }
 
@@ -204,14 +204,14 @@ class FileHandler {
     } catch (error) {
       return {
         valid: false,
-        error: `Cannot access file: ${error.message}`
+        error: `Cannot access file: ${error.message}`,
       };
     }
   }
 
   async readFile(filePath) {
     const ext = path.extname(filePath).toLowerCase();
-    
+
     try {
       switch (ext) {
         case '.txt':
@@ -228,7 +228,7 @@ class FileHandler {
 
   async readTextFile(filePath) {
     const content = await fs.readFile(filePath, 'utf-8');
-    
+
     if (content.length === 0) {
       throw new Error('File is empty');
     }
@@ -240,27 +240,27 @@ class FileHandler {
     return {
       content: content.trim(),
       characterCount: content.length,
-      wordCount: content.split(/\s+/).filter(word => word.length > 0).length,
-      type: 'text'
+      wordCount: content.split(/\s+/).filter((word) => word.length > 0).length,
+      type: 'text',
     };
   }
 
   async readPdfFile(filePath) {
     const dataBuffer = await fs.readFile(filePath);
     const data = await pdfParse(dataBuffer);
-    
+
     if (!data.text || data.text.trim().length === 0) {
       throw new Error('PDF contains no readable text');
     }
 
     const content = data.text.trim();
-    
+
     return {
       content,
       characterCount: content.length,
-      wordCount: content.split(/\s+/).filter(word => word.length > 0).length,
+      wordCount: content.split(/\s+/).filter((word) => word.length > 0).length,
       pageCount: data.numpages,
-      type: 'pdf'
+      type: 'pdf',
     };
   }
 
@@ -272,14 +272,14 @@ class FileHandler {
     const chunks = [];
     let currentChunk = '';
     const sentences = text.split(/[.!?]+/);
-    
+
     for (let sentence of sentences) {
       sentence = sentence.trim();
       if (!sentence) continue;
-      
+
       // Add sentence back the punctuation
       sentence += '.';
-      
+
       if (currentChunk.length + sentence.length + 1 <= maxChunkSize) {
         currentChunk += (currentChunk ? ' ' : '') + sentence;
       } else {
@@ -290,7 +290,7 @@ class FileHandler {
           // Single sentence is too long, split by words
           const words = sentence.split(' ');
           let wordChunk = '';
-          
+
           for (const word of words) {
             if (wordChunk.length + word.length + 1 <= maxChunkSize) {
               wordChunk += (wordChunk ? ' ' : '') + word;
@@ -299,17 +299,17 @@ class FileHandler {
               wordChunk = word;
             }
           }
-          
+
           if (wordChunk) currentChunk = wordChunk;
         }
       }
     }
-    
+
     if (currentChunk) {
       chunks.push(currentChunk.trim());
     }
-    
-    return chunks.filter(chunk => chunk.length > 0);
+
+    return chunks.filter((chunk) => chunk.length > 0);
   }
 
   calculateCost(text, model = 'tts-1') {
@@ -318,7 +318,7 @@ class FileHandler {
     return {
       characterCount: charCount,
       estimatedCost: (charCount / 1000) * costPerThousand,
-      chunks: Math.ceil(charCount / 4000)
+      chunks: Math.ceil(charCount / 4000),
     };
   }
 }

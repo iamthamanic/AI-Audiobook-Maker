@@ -12,8 +12,8 @@ class ProgressManager {
 
   async initialize() {
     await fs.ensureDir(this.progressDir);
-    
-    if (!await fs.pathExists(this.sessionsFile)) {
+
+    if (!(await fs.pathExists(this.sessionsFile))) {
       await this.saveSessions({});
     }
   }
@@ -21,7 +21,7 @@ class ProgressManager {
   async createSession(filePath, options = {}) {
     const fileStats = await fs.stat(filePath);
     const sessionId = this.generateSessionId(filePath, fileStats.mtime);
-    
+
     const session = {
       id: sessionId,
       filePath: path.resolve(filePath),
@@ -38,10 +38,10 @@ class ProgressManager {
         percentage: 0,
         currentChunk: 0,
         processedFiles: [],
-        errors: []
+        errors: [],
       },
       outputDir: null,
-      finalOutputPath: null
+      finalOutputPath: null,
     };
 
     await this.saveSession(session);
@@ -75,7 +75,7 @@ class ProgressManager {
   async updateProgress(sessionId, progressUpdate) {
     const sessions = await this.loadSessions();
     const session = sessions[sessionId];
-    
+
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
     }
@@ -84,18 +84,20 @@ class ProgressManager {
     if (progressUpdate.totalChunks) {
       session.progress.totalChunks = progressUpdate.totalChunks;
     }
-    
+
     if (progressUpdate.currentChunk !== undefined) {
       session.progress.currentChunk = progressUpdate.currentChunk;
       session.progress.completedChunks = progressUpdate.currentChunk;
-      session.progress.percentage = Math.round((progressUpdate.currentChunk / session.progress.totalChunks) * 100);
+      session.progress.percentage = Math.round(
+        (progressUpdate.currentChunk / session.progress.totalChunks) * 100
+      );
     }
 
     if (progressUpdate.filePath) {
       session.progress.processedFiles.push({
         chunkNumber: progressUpdate.currentChunk,
         filePath: progressUpdate.filePath,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
       });
     }
 
@@ -103,7 +105,7 @@ class ProgressManager {
       session.progress.errors.push({
         chunkNumber: progressUpdate.currentChunk,
         error: progressUpdate.error,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
 
@@ -121,7 +123,7 @@ class ProgressManager {
 
     session.updatedAt = new Date().toISOString();
     sessions[sessionId] = session;
-    
+
     await this.saveSessions(sessions);
     return session;
   }
@@ -134,7 +136,7 @@ class ProgressManager {
   async getRecentSessions(limit = 10) {
     const sessions = await this.loadSessions();
     const sessionList = Object.values(sessions);
-    
+
     return sessionList
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
       .slice(0, limit);
@@ -153,7 +155,7 @@ class ProgressManager {
   async showResumeDialog() {
     const recentSessions = await this.getRecentSessions();
     const resumableSessions = recentSessions.filter(
-      session => session.status !== 'completed' && session.progress.completedChunks > 0
+      (session) => session.status !== 'completed' && session.progress.completedChunks > 0
     );
 
     if (resumableSessions.length === 0) {
@@ -163,14 +165,14 @@ class ProgressManager {
     console.log(chalk.cyan('\n📋 Resume Previous Session'));
     console.log(chalk.gray('Found incomplete audiobook conversions\n'));
 
-    const choices = resumableSessions.map(session => {
+    const choices = resumableSessions.map((session) => {
       const progress = `${session.progress.completedChunks}/${session.progress.totalChunks} chunks (${session.progress.percentage}%)`;
       const timeAgo = this.getTimeAgo(session.updatedAt);
-      
+
       return {
         name: `${session.fileName} - ${progress} - ${timeAgo}`,
         value: session.id,
-        short: session.fileName
+        short: session.fileName,
       };
     });
 
@@ -184,8 +186,8 @@ class ProgressManager {
         name: 'choice',
         message: 'Would you like to resume a previous session?',
         choices,
-        pageSize: 10
-      }
+        pageSize: 10,
+      },
     ]);
 
     if (choice === 'new') {
@@ -204,7 +206,7 @@ class ProgressManager {
 
     const progress = `${session.progress.completedChunks}/${session.progress.totalChunks}`;
     const timeAgo = this.getTimeAgo(session.updatedAt);
-    
+
     console.log(chalk.cyan('\n📊 Session Details:'));
     console.log(chalk.white(`File: ${session.fileName}`));
     console.log(chalk.white(`Progress: ${progress} chunks (${session.progress.percentage}%)`));
@@ -217,7 +219,7 @@ class ProgressManager {
     if (!fileExists) {
       console.log(chalk.red('\n❌ Original file no longer exists at:'));
       console.log(chalk.red(`   ${session.filePath}`));
-      
+
       const { action } = await inquirer.prompt([
         {
           type: 'list',
@@ -226,9 +228,9 @@ class ProgressManager {
           choices: [
             { name: '📁 Locate the file manually', value: 'locate' },
             { name: '🗑️  Delete this session', value: 'delete' },
-            { name: '🔙 Back to menu', value: 'back' }
-          ]
-        }
+            { name: '🔙 Back to menu', value: 'back' },
+          ],
+        },
       ]);
 
       if (action === 'locate') {
@@ -246,8 +248,8 @@ class ProgressManager {
         type: 'confirm',
         name: 'resume',
         message: 'Resume this session?',
-        default: true
-      }
+        default: true,
+      },
     ]);
 
     return resume ? session : null;
@@ -261,23 +263,23 @@ class ProgressManager {
         message: 'Enter the new path to the file:',
         validate: async (input) => {
           if (!input) return 'Please provide a file path';
-          if (!await fs.pathExists(input)) return 'File does not exist';
-          
+          if (!(await fs.pathExists(input))) return 'File does not exist';
+
           // Check if it's the same file by comparing size and name
           const stats = await fs.stat(input);
           if (stats.size !== session.fileSize || path.basename(input) !== session.fileName) {
             return 'This appears to be a different file';
           }
-          
+
           return true;
-        }
-      }
+        },
+      },
     ]);
 
     // Update session with new file path
     session.filePath = path.resolve(filePath);
     await this.saveSession(session);
-    
+
     return session;
   }
 
@@ -285,7 +287,7 @@ class ProgressManager {
     const sessions = await this.loadSessions();
     delete sessions[sessionId];
     await this.saveSessions(sessions);
-    
+
     // Also clean up any output files if they exist
     const sessionDir = path.join(this.progressDir, sessionId);
     if (await fs.pathExists(sessionDir)) {
@@ -299,8 +301,8 @@ class ProgressManager {
         type: 'confirm',
         name: 'confirm',
         message: 'Delete all session data? This cannot be undone.',
-        default: false
-      }
+        default: false,
+      },
     ]);
 
     if (confirm) {
@@ -337,15 +339,19 @@ class ProgressManager {
     }
 
     // Check if original file exists
-    if (!await fs.pathExists(session.filePath)) {
-      return { canResume: true, needsRelocation: true, reason: 'Original file needs to be located' };
+    if (!(await fs.pathExists(session.filePath))) {
+      return {
+        canResume: true,
+        needsRelocation: true,
+        reason: 'Original file needs to be located',
+      };
     }
 
     // Check if output directory exists
-    if (session.outputDir && await fs.pathExists(session.outputDir)) {
-      const outputFiles = session.progress.processedFiles.map(f => f.filePath);
+    if (session.outputDir && (await fs.pathExists(session.outputDir))) {
+      const outputFiles = session.progress.processedFiles.map((f) => f.filePath);
       const existingFiles = [];
-      
+
       for (const file of outputFiles) {
         if (await fs.pathExists(file)) {
           existingFiles.push(file);
@@ -356,7 +362,7 @@ class ProgressManager {
         canResume: true,
         needsRelocation: false,
         existingFiles: existingFiles.length,
-        totalExpected: outputFiles.length
+        totalExpected: outputFiles.length,
       };
     }
 
@@ -366,13 +372,17 @@ class ProgressManager {
   async getSessionStats() {
     const sessions = await this.loadSessions();
     const sessionList = Object.values(sessions);
-    
+
     const stats = {
       total: sessionList.length,
-      completed: sessionList.filter(s => s.status === 'completed').length,
-      inProgress: sessionList.filter(s => s.status === 'processing' || (s.progress.completedChunks > 0 && s.status !== 'completed')).length,
-      failed: sessionList.filter(s => s.status === 'failed' || s.progress.errors.length > 0).length,
-      totalProcessedChunks: sessionList.reduce((sum, s) => sum + s.progress.completedChunks, 0)
+      completed: sessionList.filter((s) => s.status === 'completed').length,
+      inProgress: sessionList.filter(
+        (s) =>
+          s.status === 'processing' || (s.progress.completedChunks > 0 && s.status !== 'completed')
+      ).length,
+      failed: sessionList.filter((s) => s.status === 'failed' || s.progress.errors.length > 0)
+        .length,
+      totalProcessedChunks: sessionList.reduce((sum, s) => sum + s.progress.completedChunks, 0),
     };
 
     return stats;
