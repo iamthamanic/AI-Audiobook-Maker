@@ -23,7 +23,7 @@ async function main() {
   program
     .name('aiabm')
     .description('AI Audiobook Maker - Convert PDFs and text files to audiobooks')
-    .version('4.0.0')
+    .version('4.0.1')
     .argument('[file]', 'Path to PDF or text file to convert')
     .option('-v, --voice <voice>', 'Voice to use (alloy, echo, fable, onyx, nova, shimmer)')
     .option('-s, --speed <speed>', 'Speech speed (0.25-4.0)', '1.0')
