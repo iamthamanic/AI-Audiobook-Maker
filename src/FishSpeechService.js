@@ -113,48 +113,77 @@ class FishSpeechService {
     const fishDir = path.join(this.fishSpeechPath, 'fish-speech');
     const modelsDir = path.join(this.fishSpeechPath, 'models');
 
-    // Create Python script for Fish Speech generation
+    // Create Python script for Fish Speech generation using current API
     const generateScript = `
 import sys
 sys.path.append("${fishDir}")
 
-import torch
+import numpy as np
 import soundfile as sf
-from fish_speech.models.vqgan import VQGAN
-from fish_speech.models.text2semantic import TextToSemantic
-from fish_speech.text import clean_text
+from fish_speech.inference_engine import TTSInferenceEngine
+from fish_speech.utils.schema import ServeTTSRequest
 
-# Load models
-print("Loading Fish Speech models...")
+# Initialize TTS engine
+print("Initializing Fish Speech TTS engine...")
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Initialize models
-vqgan = VQGAN.from_pretrained("${modelsDir}/fish-speech-1.2/vqgan")
-t2s = TextToSemantic.from_pretrained("${modelsDir}/fish-speech-1.2/text2semantic")
-
-vqgan = vqgan.to(device)
-t2s = t2s.to(device)
-
-# Clean and prepare text
-text = """${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"""
-cleaned_text = clean_text(text)
-
-# Generate semantic tokens
-print("Generating semantic tokens...")
-semantic_tokens = t2s.generate(
-    cleaned_text,
-    temperature=0.7,
-    top_p=0.8,
-    voice_preset="${voice}"
-)
-
-# Generate audio
-print("Generating audio...")
-audio = vqgan.decode(semantic_tokens)
-
-# Save audio
-sf.write("${outputFile}", audio.cpu().numpy(), 24000)
-print("Audio saved successfully!")
+try:
+    # Create TTS inference engine
+    tts_engine = TTSInferenceEngine(
+        device=device,
+        config_name="dual_ar_2_codebook_large",
+        checkpoint_path="${modelsDir}/fish-speech-1.2"
+    )
+    print(f"✓ TTS engine initialized on {device}")
+    
+    # Prepare text
+    text = """${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"""
+    print(f"✓ Input text prepared: {len(text)} characters")
+    
+    # Create TTS request
+    req = ServeTTSRequest(
+        text=text,
+        reference_id=None,  # Use preset voice
+        references=[],      # No custom reference audio
+        max_new_tokens=2048,
+        chunk_length=100,
+        top_p=0.8,
+        repetition_penalty=1.1,
+        temperature=0.7,
+        seed=None,
+        use_memory_cache=True
+    )
+    
+    # Generate audio
+    print("Generating audio...")
+    audio_data = None
+    for result in tts_engine.inference(req):
+        if result.code == "final":
+            audio_data = result.audio
+            break
+        elif result.code == "error":
+            raise Exception(f"TTS generation error: {result.error}")
+    
+    if audio_data is None:
+        raise Exception("No audio generated")
+    
+    # Extract audio array and sample rate
+    if isinstance(audio_data, tuple):
+        sample_rate, audio_array = audio_data
+    else:
+        sample_rate = 24000
+        audio_array = audio_data
+    
+    # Save audio
+    print("Saving audio...")
+    sf.write("${outputFile}", audio_array, sample_rate)
+    print("✓ Audio saved successfully!")
+    
+except Exception as e:
+    print(f"❌ Error during generation: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 `;
 
     const scriptPath = path.join(this.fishSpeechPath, 'generate_tts.py');
@@ -223,12 +252,19 @@ try:
     print("✓ soundfile available")
     
     print("Checking Fish Speech modules...")
-    # Try to import Fish Speech modules
-    from fish_speech.models.vqgan import VQGAN
-    print("✓ VQGAN module available")
+    # Import current Fish Speech modules (DAC-based architecture)
+    import fish_speech
+    print("✓ fish_speech package available")
     
-    from fish_speech.models.text2semantic import TextToSemantic  
+    from fish_speech.models.dac import MODDED_DAC
+    print("✓ DAC module available")
+    
+    from fish_speech.models.text2semantic.llama import TextToSemantic
     print("✓ TextToSemantic module available")
+    
+    # Check inference engines
+    from fish_speech.inference_engine import TTSInferenceEngine
+    print("✓ TTS inference engine available")
     
     print("All dependencies verified successfully!")
     
