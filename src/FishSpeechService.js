@@ -118,6 +118,7 @@ class FishSpeechService {
 import sys
 sys.path.append("${fishDir}")
 
+import torch
 import numpy as np
 import soundfile as sf
 from fish_speech.inference_engine import TTSInferenceEngine
@@ -256,15 +257,14 @@ try:
     import fish_speech
     print("✓ fish_speech package available")
     
-    from fish_speech.models.dac import MODDED_DAC
-    print("✓ DAC module available")
-    
-    from fish_speech.models.text2semantic.llama import TextToSemantic
-    print("✓ TextToSemantic module available")
-    
-    # Check inference engines
-    from fish_speech.inference_engine import TTSInferenceEngine
+    # Import from inference engine directly
+    from fish_speech.inference_engine import DAC, TTSInferenceEngine
+    print("✓ DAC codec available")
     print("✓ TTS inference engine available")
+    
+    # Check schema imports
+    from fish_speech.utils.schema import ServeTTSRequest
+    print("✓ ServeTTSRequest schema available")
     
     print("All dependencies verified successfully!")
     
