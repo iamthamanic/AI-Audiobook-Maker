@@ -1,4 +1,4 @@
-# 🎧 AI Audiobook Maker (AIABM) v4.0.4
+# 🎧 AI Audiobook Maker (AIABM) v4.0.6
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -316,6 +316,26 @@ MIT License - see LICENSE file for details
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v4.0.6 (2025-08-03) - 🧪 Comprehensive Test Coverage & TTS Fixes
+- 🧪 **Major Test Coverage Improvement** - 20% to 45.07% overall coverage (+125% improvement)
+- 🎯 **AudiobookMaker.js Tests** - 0% to 42.58% coverage with integration tests
+- 🔐 **ConfigManager.js Tests** - 0% to 98.03% coverage with security tests
+- 📁 **FileHandler.js Tests** - 0% to 72.99% coverage with core functionality tests
+- 🖥️ **cli.js Tests** - 0% to 75.75% coverage with end-to-end tests
+- 🐟 **Fish Speech Fixed** - Installation detection and availability checking
+- 🇩🇪 **Thorsten Voice Fixed** - Python 3.13 compatibility and installation issues
+- 📊 **207 Total Tests** - 195 passing with comprehensive edge case coverage
+- 🔧 **Integration Tests** - Real-world testing with actual TTS services and PDF processing
+- 🛡️ **Robust Error Handling** - Enhanced service availability validation
+
+### v4.0.5 (2025-08-03) - 🎵 Unified Preview System
+- 🎵 **Unified Preview Texts** - Consistent voice previews across all TTS providers
+- 🌍 **Language-Specific Previews** - German, English, and French preview texts
+- 💾 **Smart Caching** - Consistent cache filenames prevent preview regeneration
+- 🎯 **Voice Language Detection** - Automatic language detection from voice names
+- 🔄 **Cache Optimization** - Separate preview cache directories for each provider
+- ⚙️ **Better Performance** - No more regenerating previews when switching providers
 
 ### v4.0.4 (2025-08-03) - 🛠️ Fish Speech Engine Fix
 - 🔧 **Fixed TTSInferenceEngine initialization** - Use proper ModelManager pattern

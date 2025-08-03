@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const chalk = require('chalk');
 const ora = require('ora');
+const { getPreviewText, detectVoiceLanguage, getPreviewCacheFilename } = require('./PreviewTexts');
 
 class TTSService {
   constructor(apiKey, cacheDir) {
@@ -12,8 +13,7 @@ class TTSService {
     this.baseURL = 'https://api.openai.com/v1/audio/speech';
     this.voices = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
     this.models = ['tts-1', 'tts-1-hd'];
-    this.previewText =
-      'This is a Story about transkription and fiction. Das ist eine Geschichte über Transkription und Fiktion.';
+    // Preview text is now dynamically generated based on voice language
   }
 
   async generateSpeech(text, options = {}) {
@@ -73,8 +73,13 @@ class TTSService {
   }
 
   async generateVoicePreview(voice, options = {}) {
-    const cacheKey = this.getCacheKey(this.previewText, { ...options, voice });
-    const cachedFile = path.join(this.cacheDir, 'previews', `${cacheKey}.mp3`);
+    // Detect voice language and get appropriate preview text
+    const language = detectVoiceLanguage(voice);
+    const previewText = getPreviewText(language, 'short');
+    
+    // Use consistent cache filename
+    const cacheFilename = getPreviewCacheFilename('openai', voice, language);
+    const cachedFile = path.join(this.cacheDir, 'previews', cacheFilename);
 
     // Check cache first
     if (await fs.pathExists(cachedFile)) {
@@ -85,7 +90,7 @@ class TTSService {
     const spinner = ora(`Generating preview for ${voice}...`).start();
 
     try {
-      const audioBuffer = await this.generateSpeech(this.previewText, {
+      const audioBuffer = await this.generateSpeech(previewText, {
         ...options,
         voice,
         model: 'tts-1', // Use faster model for previews

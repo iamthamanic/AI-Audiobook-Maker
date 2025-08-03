@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const chalk = require('chalk');
 const os = require('os');
+const { getPreviewText, detectVoiceLanguage, getPreviewCacheFilename } = require('./PreviewTexts');
 
 const execAsync = promisify(exec);
 
@@ -34,6 +35,11 @@ class FishSpeechService {
 
   async processTextChunks(chunks, options, onProgress) {
     console.log(chalk.cyan('🐟 Processing text with Fish Speech...'));
+
+    // Check if Fish Speech is available first
+    if (!await this.isAvailable()) {
+      throw new Error('Fish Speech not available. Please install Fish Speech first.');
+    }
 
     const audioFiles = [];
     const outputDir = options.outputDir || this.cachePath;
@@ -68,14 +74,32 @@ class FishSpeechService {
     return audioFiles;
   }
 
-  async generateVoicePreview(voice, text = 'This is a preview of the selected voice.') {
+  async generateVoicePreview(voice, options = {}) {
     console.log(chalk.cyan('🐟 Generating voice preview...'));
 
     try {
-      const previewFile = path.join(this.cachePath, 'voice_preview.wav');
-      await fs.ensureDir(this.cachePath);
+      // Check if Fish Speech is available first
+      if (!await this.isAvailable()) {
+        throw new Error('Fish Speech not available. Please install Fish Speech first.');
+      }
 
-      await this.generateAudioFile(text.trim(), previewFile, voice);
+      // Detect voice language and get appropriate preview text
+      const language = detectVoiceLanguage(voice);
+      const previewText = getPreviewText(language, 'short');
+      
+      // Use consistent cache filename
+      const cacheFilename = getPreviewCacheFilename('fishspeech', voice, language);
+      const previewFile = path.join(this.cachePath, 'previews', cacheFilename);
+
+      // Check cache first
+      if (await fs.pathExists(previewFile)) {
+        return previewFile;
+      }
+
+      // Ensure preview directory exists
+      await fs.ensureDir(path.dirname(previewFile));
+
+      await this.generateAudioFile(previewText.trim(), previewFile, voice);
       return previewFile;
     } catch (error) {
       console.log(chalk.red(`❌ Error generating preview: ${error.message}`));
