@@ -1,4 +1,4 @@
-# 🎧 AI Audiobook Maker (AIABM) v4.0.1
+# 🎧 AI Audiobook Maker (AIABM) v4.0.2
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -316,6 +316,14 @@ MIT License - see LICENSE file for details
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v4.0.2 (2025-08-03) - 🐟 Fish Speech API Update
+- 🔧 **Fixed Fish Speech dependency check** - Updated to use current DAC-based architecture
+- 🗑️ **Removed deprecated VQGAN imports** - Fish Speech now uses DAC (Descript Audio Codec)
+- ✅ **Updated generation script** - Uses modern TTSInferenceEngine API
+- 🔄 **Better installation handling** - Auto-removes incomplete installations
+- 📦 **Improved pip install** - Installs Fish Speech package in development mode
+- 🛠️ **Enhanced error reporting** - More detailed debugging information
 
 ### v4.0.1 (2025-08-02) - 🔧 Installation & Compatibility Fixes
 - 🔧 **Fixed Fish Speech virtual environment usage** - Proper dependency checking

@@ -11,7 +11,7 @@ async function main() {
     chalk.cyan(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                                                               ║
-║                🎧 AI AUDIOBOOK MAKER v4.0.1 🎧                ║
+║                🎧 AI AUDIOBOOK MAKER v4.0.2 🎧                ║
 ║                                                               ║
 ║            Transform PDFs & Text into Audiobooks             ║
 ║         OpenAI TTS, Fish Speech & Thorsten-Voice TTS         ║
@@ -23,7 +23,7 @@ async function main() {
   program
     .name('aiabm')
     .description('AI Audiobook Maker - Convert PDFs and text files to audiobooks')
-    .version('4.0.1')
+    .version('4.0.2')
     .argument('[file]', 'Path to PDF or text file to convert')
     .option('-v, --voice <voice>', 'Voice to use (alloy, echo, fable, onyx, nova, shimmer)')
     .option('-s, --speed <speed>', 'Speech speed (0.25-4.0)', '1.0')
