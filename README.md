@@ -1,4 +1,4 @@
-# 🎧 AI Audiobook Maker (AIABM) v4.0.3
+# 🎧 AI Audiobook Maker (AIABM) v4.0.4
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -316,6 +316,13 @@ MIT License - see LICENSE file for details
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v4.0.4 (2025-08-03) - 🛠️ Fish Speech Engine Fix
+- 🔧 **Fixed TTSInferenceEngine initialization** - Use proper ModelManager pattern
+- 🏗️ **Implemented correct model loading** - Load LLaMA and DAC models separately
+- 🎯 **Auto-device detection** - Support for MPS (Apple Silicon), CUDA, and CPU
+- 📦 **Better model management** - Use launch_thread_safe_queue for text-to-semantic
+- 🔄 **Improved generation flow** - Proper model initialization before inference
 
 ### v4.0.3 (2025-08-03) - 🔧 Fish Speech Import Fix
 - 🔧 **Fixed MODDED_DAC import** - Changed to correct DAC import from inference_engine

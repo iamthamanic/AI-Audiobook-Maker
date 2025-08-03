@@ -113,29 +113,62 @@ class FishSpeechService {
     const fishDir = path.join(this.fishSpeechPath, 'fish-speech');
     const modelsDir = path.join(this.fishSpeechPath, 'models');
 
-    // Create Python script for Fish Speech generation using current API
+    // Create Python script for Fish Speech generation using ModelManager pattern
     const generateScript = `
 import sys
 sys.path.append("${fishDir}")
 
 import torch
-import numpy as np
 import soundfile as sf
 from fish_speech.inference_engine import TTSInferenceEngine
+from fish_speech.models.dac.inference import load_model as load_decoder_model
+from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
 from fish_speech.utils.schema import ServeTTSRequest
 
-# Initialize TTS engine
 print("Initializing Fish Speech TTS engine...")
-device = "cuda" if torch.cuda.is_available() else "cpu"
 
 try:
+    # Auto-detect device
+    if torch.backends.mps.is_available():
+        device = "mps"
+        print("✓ Using MPS (Apple Silicon)")
+    elif torch.cuda.is_available():
+        device = "cuda"
+        print("✓ Using CUDA GPU")
+    else:
+        device = "cpu"
+        print("✓ Using CPU")
+    
+    precision = torch.half if device != "cpu" else torch.float32
+    
+    # Load LLaMA model (text-to-semantic)
+    print("Loading text-to-semantic model...")
+    llama_checkpoint_path = "${modelsDir}/fish-speech-1.2"
+    llama_queue = launch_thread_safe_queue(
+        checkpoint_path=llama_checkpoint_path,
+        device=device,
+        precision=precision,
+        compile=False
+    )
+    print("✓ Text-to-semantic model loaded")
+    
+    # Load decoder model (DAC)
+    print("Loading audio decoder model...")
+    decoder_model = load_decoder_model(
+        config_name="dual_ar_2_codebook_large",
+        checkpoint_path="${modelsDir}/fish-speech-1.2",
+        device=device
+    )
+    print("✓ Audio decoder model loaded")
+    
     # Create TTS inference engine
     tts_engine = TTSInferenceEngine(
-        device=device,
-        config_name="dual_ar_2_codebook_large",
-        checkpoint_path="${modelsDir}/fish-speech-1.2"
+        llama_queue=llama_queue,
+        decoder_model=decoder_model,
+        precision=precision,
+        compile=False
     )
-    print(f"✓ TTS engine initialized on {device}")
+    print("✓ TTS inference engine initialized")
     
     # Prepare text
     text = """${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"""
@@ -144,8 +177,8 @@ try:
     # Create TTS request
     req = ServeTTSRequest(
         text=text,
-        reference_id=None,  # Use preset voice
-        references=[],      # No custom reference audio
+        reference_id=None,
+        references=[],
         max_new_tokens=2048,
         chunk_length=100,
         top_p=0.8,
