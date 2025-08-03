@@ -137,22 +137,28 @@ class FishSpeechService {
     const fishDir = path.join(this.fishSpeechPath, 'fish-speech');
     const modelsDir = path.join(this.fishSpeechPath, 'models');
 
-    // Create Python script for Fish Speech generation using ModelManager pattern
+    // Create Python script for Fish Speech generation using official webui approach
     const generateScript = `
 import sys
-sys.path.append("${fishDir}")
+import os
+import pyrootutils
+
+# Setup Fish Speech environment
+fish_root = "${fishDir}"
+sys.path.insert(0, fish_root)
+pyrootutils.setup_root(fish_root, indicator=".project-root", pythonpath=True)
 
 import torch
-import soundfile as sf
+import torchaudio
 from fish_speech.inference_engine import TTSInferenceEngine
 from fish_speech.models.dac.inference import load_model as load_decoder_model
 from fish_speech.models.text2semantic.inference import launch_thread_safe_queue
 from fish_speech.utils.schema import ServeTTSRequest
 
-print("Initializing Fish Speech TTS engine...")
+print("🐟 Initializing Fish Speech TTS...")
 
 try:
-    # Auto-detect device
+    # Device detection  
     if torch.backends.mps.is_available():
         device = "mps"
         print("✓ Using MPS (Apple Silicon)")
@@ -163,11 +169,12 @@ try:
         device = "cpu"
         print("✓ Using CPU")
     
-    precision = torch.half if device != "cpu" else torch.float32
+    precision = torch.half if device in ["cuda", "mps"] else torch.float32
     
-    # Load LLaMA model (text-to-semantic)
+    # Load models using official approach
     print("Loading text-to-semantic model...")
     llama_checkpoint_path = "${modelsDir}/fish-speech-1.2"
+    
     llama_queue = launch_thread_safe_queue(
         checkpoint_path=llama_checkpoint_path,
         device=device,
@@ -176,31 +183,33 @@ try:
     )
     print("✓ Text-to-semantic model loaded")
     
-    # Load decoder model (DAC)
-    print("Loading audio decoder model...")
+    print("Loading decoder model...")
+    decoder_checkpoint_path = "${modelsDir}/fish-speech-1.2/firefly-gan-vq-fsq-4x1024-42hz-generator.pth"
+    
+    # Use firefly_gan_vq config - matched to firefly-gan-vq-fsq-4x1024 model
     decoder_model = load_decoder_model(
-        config_name="dual_ar_2_codebook_large",
-        checkpoint_path="${modelsDir}/fish-speech-1.2",
+        config_name="firefly_gan_vq",
+        checkpoint_path=decoder_checkpoint_path,
         device=device
     )
-    print("✓ Audio decoder model loaded")
+    print("✓ Decoder model loaded")
     
-    # Create TTS inference engine
-    tts_engine = TTSInferenceEngine(
+    # Create inference engine
+    engine = TTSInferenceEngine(
         llama_queue=llama_queue,
         decoder_model=decoder_model,
         precision=precision,
         compile=False
     )
-    print("✓ TTS inference engine initialized")
+    print("✓ TTS inference engine ready")
     
     # Prepare text
-    text = """${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"""
-    print(f"✓ Input text prepared: {len(text)} characters")
+    input_text = """${text.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"""
+    print(f"✓ Processing text: {input_text[:50]}...")
     
     # Create TTS request
     req = ServeTTSRequest(
-        text=text,
+        text=input_text,
         reference_id=None,
         references=[],
         max_new_tokens=2048,
@@ -209,13 +218,15 @@ try:
         repetition_penalty=1.1,
         temperature=0.7,
         seed=None,
-        use_memory_cache=True
+        use_memory_cache="on"
     )
     
     # Generate audio
     print("Generating audio...")
     audio_data = None
-    for result in tts_engine.inference(req):
+    sample_rate = 44100  # Default Fish Speech sample rate
+    
+    for result in engine.inference(req):
         if result.code == "final":
             audio_data = result.audio
             break
@@ -223,19 +234,28 @@ try:
             raise Exception(f"TTS generation error: {result.error}")
     
     if audio_data is None:
-        raise Exception("No audio generated")
+        raise Exception("No audio data generated")
     
-    # Extract audio array and sample rate
+    # Handle audio data format
     if isinstance(audio_data, tuple):
-        sample_rate, audio_array = audio_data
+        sample_rate, audio_tensor = audio_data
     else:
-        sample_rate = 24000
-        audio_array = audio_data
+        audio_tensor = audio_data
+    
+    # Ensure correct tensor format for torchaudio
+    if not isinstance(audio_tensor, torch.Tensor):
+        audio_tensor = torch.tensor(audio_tensor, dtype=torch.float32)
+    
+    # Make sure tensor has correct shape (channels, samples)
+    if audio_tensor.dim() == 1:
+        audio_tensor = audio_tensor.unsqueeze(0)  # Add channel dimension
+    
+    print(f"✓ Audio generated: {audio_tensor.shape} at {sample_rate}Hz")
     
     # Save audio
     print("Saving audio...")
-    sf.write("${outputFile}", audio_array, sample_rate)
-    print("✓ Audio saved successfully!")
+    torchaudio.save("${outputFile}", audio_tensor, sample_rate)
+    print("✅ Audio generation completed!")
     
 except Exception as e:
     print(f"❌ Error during generation: {e}")

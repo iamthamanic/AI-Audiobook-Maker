@@ -1,4 +1,4 @@
-# 🎧 AI Audiobook Maker (AIABM) v4.0.6
+# 🎧 AI Audiobook Maker (AIABM) v4.0.7
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -316,6 +316,15 @@ MIT License - see LICENSE file for details
 - Uses FFmpeg for audio processing
 
 ## 📝 Changelog
+
+### v4.0.7 (2025-08-03) - 🐟 Fish Speech Fully Fixed & Operational
+- 🐟 **Fish Speech 100% Working** - Complete resolution of all Fish Speech TTS issues
+- 🔧 **Fixed tokenizer.tiktoken** - Proper base64 encoding of 32,000 tokens from Fish Speech
+- ⚙️ **Model Configuration Fixed** - Created correct firefly_gan_vq.yaml matching model architecture
+- 📐 **Dimension Mismatch Resolved** - Fixed 512-dim vs 1024-dim PyTorch tensor issues
+- ✅ **Parameter Validation Fixed** - Corrected ServeTTSRequest use_memory_cache format
+- 🎯 **End-to-End Functionality** - Text-to-semantic and decoder models load perfectly
+- 🚀 **Full Service Availability** - Fish Speech now detected as available and operational
 
 ### v4.0.6 (2025-08-03) - 🧪 Comprehensive Test Coverage & TTS Fixes
 - 🧪 **Major Test Coverage Improvement** - 20% to 45.07% overall coverage (+125% improvement)

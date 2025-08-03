@@ -85,6 +85,9 @@ describe('FishSpeechService', () => {
       getPreviewText.mockClear();
       detectVoiceLanguage.mockClear();
       getPreviewCacheFilename.mockClear();
+      
+      // Mock isAvailable to return true by default for preview tests
+      fishSpeechService.isAvailable = jest.fn().mockResolvedValue(true);
     });
 
     test('should use unified preview text system', async () => {
@@ -207,6 +210,9 @@ describe('FishSpeechService', () => {
     beforeEach(() => {
       fs.ensureDir = jest.fn();
       fishSpeechService.generateAudioFile = jest.fn().mockResolvedValue();
+      
+      // Mock isAvailable to return true by default for processTextChunks tests
+      fishSpeechService.isAvailable = jest.fn().mockResolvedValue(true);
     });
 
     test('should process text chunks and generate audio files', async () => {

@@ -5,6 +5,29 @@ All notable changes to AI Audiobook Maker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.7] - 2025-08-03
+
+### Fixed
+- **Fish Speech TTS**: Completely resolved tokenizer and model configuration issues
+  - Fixed missing `tokenizer.tiktoken` file with proper base64 encoding of 32,000 tokens
+  - Created correct `firefly_gan_vq.yaml` configuration matching firefly-gan-vq-fsq-4x1024 model
+  - Resolved PyTorch model dimension mismatches (512-dim vs 1024-dim)
+  - Fixed ServeTTSRequest parameter validation (`use_memory_cache` format)
+  - Fish Speech now loads successfully and is fully operational
+
+### Improved
+- **Fish Speech Reliability**: Complete end-to-end functionality restoration
+  - Text-to-semantic model loads without errors
+  - Decoder model loads with correct architecture configuration
+  - TTS inference engine initializes properly
+  - Service availability detection works correctly
+
+### Technical Details
+- Fixed tokenizer conversion from JSON to tiktoken format with base64 encoding
+- Created custom firefly_gan_vq.yaml config with 512-dim input to match model architecture
+- Updated FishSpeechService.js parameter format for Fish Speech API compatibility
+- All Fish Speech dependencies and imports now function correctly
+
 ## [4.0.6] - 2025-08-03
 
 ### Added

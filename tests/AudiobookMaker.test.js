@@ -59,7 +59,7 @@ describe('AudiobookMaker', () => {
     jest.spyOn(process, 'exit').mockImplementation();
     
     // Setup default inquirer mock
-    inquirer.prompt = jest.fn();
+    inquirer.prompt = jest.fn().mockResolvedValue({ action: 'exit' });
 
     // Setup mock instances
     mockConfigManager = {

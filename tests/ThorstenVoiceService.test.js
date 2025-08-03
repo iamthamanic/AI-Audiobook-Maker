@@ -102,7 +102,10 @@ describe('ThorstenVoiceService', () => {
     });
 
     test('should use unified preview text system', async () => {
+      // Mock isAvailable to return true for this test
+      thorstenService.isAvailable = jest.fn().mockResolvedValue(true);
       fs.pathExists.mockResolvedValue(false);
+      fs.ensureDir.mockResolvedValue(undefined);
       thorstenService.generateAudioFile = jest.fn().mockResolvedValue();
 
       await thorstenService.generateVoicePreview('thorsten-male');
@@ -114,6 +117,8 @@ describe('ThorstenVoiceService', () => {
 
     test('should return cached preview if exists', async () => {
       const cachedPath = path.join('/test/cache', 'previews', 'preview_thorsten_test_voice_de.wav');
+      // Mock isAvailable to return true for this test
+      thorstenService.isAvailable = jest.fn().mockResolvedValue(true);
       fs.pathExists.mockResolvedValue(true);
 
       const result = await thorstenService.generateVoicePreview('thorsten-male');
@@ -124,7 +129,10 @@ describe('ThorstenVoiceService', () => {
     });
 
     test('should generate new preview if cache miss', async () => {
+      // Mock isAvailable to return true for this test
+      thorstenService.isAvailable = jest.fn().mockResolvedValue(true);
       fs.pathExists.mockResolvedValue(false);
+      fs.ensureDir.mockResolvedValue(undefined);
       thorstenService.generateAudioFile = jest.fn().mockResolvedValue();
 
       await thorstenService.generateVoicePreview('thorsten-emotional');
@@ -213,9 +221,13 @@ describe('ThorstenVoiceService', () => {
     });
 
     test('should process text chunks and generate audio files', async () => {
+      // Mock isAvailable to return true for this test
+      thorstenService.isAvailable = jest.fn().mockResolvedValue(true);
       const chunks = ['Hallo Welt', 'Das ist ein Test'];
       const options = { outputDir: '/test/output', voice: 'thorsten-male' };
       const onProgress = jest.fn();
+      fs.ensureDir.mockResolvedValue(undefined);
+      thorstenService.generateAudioFile = jest.fn().mockResolvedValue();
 
       const result = await thorstenService.processTextChunks(chunks, options, onProgress);
 
@@ -232,8 +244,11 @@ describe('ThorstenVoiceService', () => {
     });
 
     test('should handle chunk processing errors', async () => {
+      // Mock isAvailable to return true for this test
+      thorstenService.isAvailable = jest.fn().mockResolvedValue(true);
       const chunks = ['Good chunk', 'Bad chunk'];
       const options = { voice: 'thorsten-male' };
+      fs.ensureDir.mockResolvedValue(undefined);
       
       thorstenService.generateAudioFile = jest.fn()
         .mockResolvedValueOnce() // First chunk succeeds

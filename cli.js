@@ -85,4 +85,7 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-main();
+// Only run main() if this file is executed directly (not required in tests)
+if (require.main === module) {
+  main();
+}
