@@ -5,6 +5,22 @@ All notable changes to AI Audiobook Maker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.2] - 2025-08-04
+
+### Fixed
+- **Thorsten-Voice TTS**: Fixed ffmpeg hanging issue during audio file combination
+  - Resolved hanging when processing single audio files (short texts)
+  - Added intelligent detection for single-file scenarios
+  - Single audio files are now copied directly instead of using ffmpeg concatenation
+  - Eliminates unnecessary ffmpeg operations for simple cases
+  - Significantly improves processing speed for short content
+
+### Technical Details
+- Enhanced `combineAudioFiles()` method in ThorstenVoiceService
+- Added single-file detection before attempting ffmpeg concatenation
+- Maintains full compatibility with multi-file scenarios
+- Improved user experience with faster processing for short texts
+
 ## [5.0.1] - 2025-08-04
 
 ### Fixed

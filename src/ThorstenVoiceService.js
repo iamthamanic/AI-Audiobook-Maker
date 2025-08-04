@@ -113,6 +113,14 @@ class ThorstenVoiceService {
     try {
       await this.checkFfmpeg();
 
+      // If there's only one audio file, just copy it to the output path
+      if (audioFiles.length === 1) {
+        console.log(chalk.gray('   Single audio file detected, copying directly...'));
+        await fs.copy(audioFiles[0], outputPath);
+        console.log(chalk.green('✅ Audio file copied successfully'));
+        return outputPath;
+      }
+
       const fileListPath = path.join(this.cachePath, 'file_list.txt');
       const fileListContent = audioFiles.map((file) => `file '${file}'`).join('\n');
       await fs.writeFile(fileListPath, fileListContent);
