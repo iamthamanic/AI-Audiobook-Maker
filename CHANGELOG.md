@@ -5,6 +5,40 @@ All notable changes to AI Audiobook Maker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2025-08-04
+
+### BREAKING CHANGES
+- **Fish Speech TTS**: Completely removed due to persistent compatibility issues
+  - Fish Speech service and all related code removed from codebase
+  - Model/config incompatibilities between firefly-gan-vq weights and available configs
+  - Installation directory (~/.aiabm/fish-speech) deleted
+  - Breaking change: Applications depending on Fish Speech TTS will no longer work
+
+### Removed
+- **Fish Speech Integration**: Complete removal of Fish Speech TTS service
+  - Removed `src/FishSpeechService.js` and all Fish Speech related code
+  - Removed Fish Speech from TTS provider selection menu
+  - Removed Fish Speech installation and configuration logic
+  - Removed Fish Speech test files and test coverage
+  - Updated CLI help text to reflect available services only
+
+### Changed
+- **Available TTS Services**: Now limited to two reliable providers
+  - 🤖 **OpenAI TTS** (Cloud, premium quality)
+  - 🇩🇪 **Thorsten-Voice** (Local, native German)
+- **Package Description**: Updated to reflect current TTS service availability
+- **CLI Interface**: Streamlined interface without Fish Speech options
+
+### Technical Details
+- Cleaned up all Fish Speech imports and dependencies
+- Fixed syntax errors introduced during removal process
+- Updated application header and help text
+- Maintained full compatibility for OpenAI TTS and Thorsten-Voice services
+
+**Migration Guide**: Users previously using Fish Speech should switch to:
+- **Thorsten-Voice** for German content (local, free)
+- **OpenAI TTS** for multilingual content (cloud, paid)
+
 ## [4.0.7] - 2025-08-03
 
 ### Fixed

@@ -1,7 +1,6 @@
 const ConfigManager = require('./ConfigManager');
 const FileHandler = require('./FileHandler');
 const TTSService = require('./TTSService');
-const FishSpeechService = require('./FishSpeechService');
 const ThorstenVoiceService = require('./ThorstenVoiceService');
 const VoicePreview = require('./VoicePreview');
 const ProgressManager = require('./ProgressManager');
@@ -228,15 +227,6 @@ class AudiobookMaker {
       if (!apiKey) throw new Error('OpenAI API key required');
 
       this.ttsService = new TTSService(apiKey, this.configManager.getCacheDir());
-    } else if (provider === 'fishspeech') {
-      this.ttsService = new FishSpeechService(this.configManager.getCacheDir());
-
-      // Check if Fish Speech is available
-      const available = await this.ttsService.isAvailable();
-      if (!available) {
-        console.log(chalk.yellow('⚠️  Fish Speech not found or not properly installed'));
-        throw new Error('Fish Speech not available');
-      }
     } else if (provider === 'thorsten') {
       this.ttsService = new ThorstenVoiceService(this.configManager.getCacheDir());
 
@@ -267,11 +257,6 @@ class AudiobookMaker {
             short: 'OpenAI TTS',
           },
           {
-            name: '🐟 Fish Speech (Local, SOTA quality, multilingual)',
-            value: 'fishspeech',
-            short: 'Fish Speech',
-          },
-          {
             name: '🇩🇪 Thorsten-Voice (Local, native German)',
             value: 'thorsten',
             short: 'Thorsten-Voice',
@@ -282,24 +267,7 @@ class AudiobookMaker {
     ]);
 
     // Check if local services are available if selected
-    if (provider === 'fishspeech') {
-      const available = await this.checkLocalServiceInstallation('fishspeech');
-      if (!available) {
-        const installed = await this.showLocalServiceInstallation('Fish Speech');
-        if (!installed) {
-          return 'openai'; // Fallback to OpenAI
-        }
-        // Re-check availability after installation with a small delay
-        console.log(chalk.gray('   Verifying installation...'));
-        await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay
-        const nowAvailable = await this.checkLocalServiceInstallation('fishspeech');
-        if (!nowAvailable) {
-          console.log(chalk.red('❌ Fish Speech installation verification failed. Switching to OpenAI TTS'));
-          console.log(chalk.yellow('💡 You can try running the app again - sometimes the installation needs a restart'));
-          return 'openai';
-        }
-      }
-    } else if (provider === 'thorsten') {
+    if (provider === 'thorsten') {
       // Pre-check Python version compatibility for Thorsten-Voice
       const pythonCompatible = await this.checkThorstenPythonCompatibility();
       if (!pythonCompatible) {
@@ -378,9 +346,7 @@ class AudiobookMaker {
   async checkLocalServiceInstallation(provider) {
     try {
       let service;
-      if (provider === 'fishspeech') {
-        service = new FishSpeechService(this.configManager.getCacheDir());
-      } else if (provider === 'thorsten') {
+      if (provider === 'thorsten') {
         service = new ThorstenVoiceService(this.configManager.getCacheDir());
       }
 
@@ -437,10 +403,7 @@ class AudiobookMaker {
 
     try {
       let service;
-      if (serviceName === 'Fish Speech') {
-        service = new FishSpeechService(this.configManager.getCacheDir());
-        return await service.installFishSpeech();
-      } else if (serviceName === 'Thorsten-Voice') {
+      if (serviceName === 'Thorsten-Voice') {
         service = new ThorstenVoiceService(this.configManager.getCacheDir());
         return await service.installThorsten();
       }
@@ -455,13 +418,7 @@ class AudiobookMaker {
   }
 
   showManualInstallation(serviceName) {
-    if (serviceName === 'Fish Speech') {
-      const guide = new FishSpeechService(this.configManager.getCacheDir()).getInstallationGuide();
-      console.log(chalk.cyan(`\n📋 ${guide.title}:`));
-      guide.steps.forEach(step => console.log(chalk.white(step)));
-      console.log(chalk.gray('\nLinks:'));
-      guide.links.forEach(link => console.log(chalk.gray(`   ${link}`)));
-    } else if (serviceName === 'Thorsten-Voice') {
+    if (serviceName === 'Thorsten-Voice') {
       const guide = new ThorstenVoiceService(this.configManager.getCacheDir()).getInstallationGuide();
       console.log(chalk.cyan(`\n📋 ${guide.title}:`));
       guide.steps.forEach(step => console.log(chalk.white(step)));
