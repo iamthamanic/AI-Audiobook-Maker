@@ -135,19 +135,43 @@ class ThorstenVoiceService {
 
     const pythonCommand = await this.getPythonCommand();
 
-    // Build TTS command using Coqui TTS
-    const cmd = [
-      pythonCommand,
-      '-c',
-      `"import TTS; from TTS.api import TTS; tts = TTS('${this.modelName}'); tts.tts_to_file(text='${text.replace(/'/g, "\\'")}', file_path='${outputFile}')"`,
-    ].join(' ');
+    // Create a temporary Python script to handle multiline text safely using base64
+    const textBase64 = Buffer.from(text).toString('base64');
+    const scriptContent = `
+import TTS
+from TTS.api import TTS
+import base64
+
+# Initialize TTS model
+tts = TTS('${this.modelName}')
+
+# Decode base64 text to handle special characters and newlines safely
+text_base64 = '${textBase64}'
+text = base64.b64decode(text_base64).decode('utf-8')
+
+# Generate speech
+tts.tts_to_file(text=text, file_path='${outputFile}')
+print("TTS generation completed successfully")
+`;
+
+    const scriptPath = path.join(this.thorstenPath, 'temp_tts_script.py');
+    await fs.writeFile(scriptPath, scriptContent);
 
     try {
-      await execAsync(cmd, {
+      await execAsync(`"${pythonCommand}" "${scriptPath}"`, {
         cwd: this.thorstenPath,
         timeout: 60000,
       });
+      
+      // Clean up temporary script
+      await fs.remove(scriptPath);
     } catch (error) {
+      // Clean up temporary script on error
+      try {
+        await fs.remove(scriptPath);
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
       throw new Error(`Thorsten-Voice generation failed: ${error.message}`);
     }
   }

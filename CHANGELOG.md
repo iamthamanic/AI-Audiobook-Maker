@@ -5,6 +5,21 @@ All notable changes to AI Audiobook Maker will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2025-08-04
+
+### Fixed
+- **Thorsten-Voice TTS**: Fixed multiline text processing with special characters
+  - Resolved `SyntaxError: unterminated string literal` when processing text with newlines
+  - Replaced inline Python command with temporary script using Base64 encoding
+  - Now handles complex text with quotes, newlines, and special characters safely
+  - Improved error handling and cleanup of temporary script files
+
+### Technical Details
+- Thorsten-Voice now uses Base64-encoded text in temporary Python scripts
+- Eliminates string escaping issues in shell command execution
+- Maintains full compatibility with existing voice processing pipeline
+- Added proper cleanup of temporary files on both success and error
+
 ## [5.0.0] - 2025-08-04
 
 ### BREAKING CHANGES
