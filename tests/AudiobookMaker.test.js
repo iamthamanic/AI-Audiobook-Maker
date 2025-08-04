@@ -2,7 +2,6 @@ const AudiobookMaker = require('../src/AudiobookMaker');
 const ConfigManager = require('../src/ConfigManager');
 const FileHandler = require('../src/FileHandler');
 const TTSService = require('../src/TTSService');
-const FishSpeechService = require('../src/FishSpeechService');
 const ThorstenVoiceService = require('../src/ThorstenVoiceService');
 const VoicePreview = require('../src/VoicePreview');
 const ProgressManager = require('../src/ProgressManager');
@@ -15,7 +14,6 @@ const path = require('path');
 jest.mock('../src/ConfigManager');
 jest.mock('../src/FileHandler');
 jest.mock('../src/TTSService');
-jest.mock('../src/FishSpeechService');
 jest.mock('../src/ThorstenVoiceService');
 jest.mock('../src/VoicePreview');
 jest.mock('../src/ProgressManager');
@@ -386,11 +384,9 @@ describe('AudiobookMaker', () => {
 
     test('should initialize Fish Speech service', async () => {
       const mockFishService = { isAvailable: jest.fn().mockResolvedValue(true) };
-      FishSpeechService.mockImplementation(() => mockFishService);
 
       await audiobookMaker.initializeServices('fishspeech');
 
-      expect(FishSpeechService).toHaveBeenCalledWith('/mock/cache');
       expect(mockFishService.isAvailable).toHaveBeenCalled();
       expect(VoicePreview).toHaveBeenCalled();
     });
@@ -408,7 +404,6 @@ describe('AudiobookMaker', () => {
 
     test('should throw error if Fish Speech not available', async () => {
       const mockFishService = { isAvailable: jest.fn().mockResolvedValue(false) };
-      FishSpeechService.mockImplementation(() => mockFishService);
 
       await expect(audiobookMaker.initializeServices('fishspeech')).rejects.toThrow(
         'Fish Speech not available'
