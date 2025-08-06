@@ -1,22 +1,25 @@
-# 🎧 AI Audiobook Maker (AIABM) v4.0.7
+# 🎧 AI Audiobook Maker (AIABM) v5.0.3
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/node/v/ai-audiobook-maker.svg)](https://nodejs.org)
 
-Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud), **Fish Speech** (local/SOTA), or **Thorsten-Voice** (native German). Choose between premium cloud voices or run everything locally at no cost!
+Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud) or **Thorsten-Voice** (native German). Choose between premium cloud voices or run everything locally at no cost!
+
+**🆕 New in v5.0:** Enhanced security, comprehensive testing, better error handling, and improved CLI experience.
 
 ## ✨ Features
 
-### 🎙️ **Triple TTS Providers**
-- **☁️ OpenAI TTS**: Premium cloud voices (requires API key)
-- **🐟 Fish Speech**: State-of-the-art local TTS with multilingual support
-- **🇩🇪 Thorsten-Voice**: Native German TTS with authentic pronunciation
+### 🎙️ **Dual TTS Providers**
+- **☁️ OpenAI TTS**: Premium cloud voices with 6 voice options (requires API key)
+- **🇩🇪 Thorsten-Voice**: Native German TTS with authentic pronunciation (local/free)
 
 ### 🚀 **Core Features**
 - **🚀 Zero Installation**: Run directly with `npx aiabm`
 - **📁 Smart File Handling**: Supports PDF and TXT files with drag & drop
-- **🎤 Voice Preview**: Listen to voices before choosing (8 Fish Speech + 2 Thorsten + 6 OpenAI)
+- **🎤 Voice Preview**: Listen to voices before choosing (2 Thorsten + 6 OpenAI voices)
+- **🔒 Enhanced Security**: Input sanitization, API key validation, and secure storage
+- **🧪 Comprehensive Testing**: 55+ unit tests with 12.6% coverage and growing
 - **⏸️ Resume & Pause**: Continue interrupted conversions anytime
 - **🔐 Secure API Key Management**: Encrypted local storage
 - **📊 Progress Tracking**: Real-time conversion progress with estimates
@@ -47,10 +50,15 @@ aiabm mybook.pdf
 - **Node.js 16+** (Download from [nodejs.org](https://nodejs.org/))
 - **FFmpeg** (for audio combining - auto-installed on most systems)
 
-### Optional (Choose One or More)
-- **OpenAI API Key** (Get from [platform.openai.com](https://platform.openai.com/account/api-keys)) - For cloud TTS
-- **Python 3.8+** (For Fish Speech local processing) - For multilingual local TTS
-- **Python 3.9-3.11** (For Thorsten-Voice) - For native German TTS
+### Optional (Choose One or Both)
+**For OpenAI TTS:**
+- OpenAI API key (get from [platform.openai.com](https://platform.openai.com/account/api-keys))
+- Costs ~$0.015 per 1,000 characters
+
+**For Thorsten-Voice (German TTS):**
+- Python 3.9-3.11 (auto-installed)
+- Coqui TTS (auto-installed)
+- **Completely FREE** - runs locally
 
 ## 🎯 Usage Examples
 
@@ -200,6 +208,32 @@ Voice previews are cached locally to save API costs and improve performance.
 - ✅ Up to 1M characters
 - ✅ UTF-8 encoding
 - ✅ Automatic formatting cleanup
+
+## 🆕 What's New in v5.0
+
+### 🔒 **Enhanced Security**
+- **Input Sanitization**: Prevents code injection and malicious input
+- **API Key Validation**: Comprehensive security checks for OpenAI keys
+- **Secure Storage**: Encrypted API key storage with multiple layers
+- **Environment Assessment**: Automatic security environment analysis
+
+### 🧪 **Comprehensive Testing**
+- **55+ Unit Tests**: Extensive test coverage for core functionality
+- **12.6% Code Coverage**: Growing test suite with focus on critical paths
+- **Mocked Services**: Fast, reliable tests without external dependencies
+- **CI/CD Pipeline**: Automated testing on every commit
+
+### 🛡️ **Better Error Handling**
+- **Type-Safe Validation**: Zod schemas for all configuration and data
+- **Graceful Failures**: Better error messages and recovery mechanisms
+- **Logging & Monitoring**: Detailed error tracking and user feedback
+
+### 🎯 **Developer Experience**
+- **GitHub Actions**: Automated CI/CD with security auditing
+- **ESLint Clean**: Zero linting errors with consistent code style
+- **Documentation**: Comprehensive inline documentation and examples
+
+---
 
 ## ⚙️ Configuration
 

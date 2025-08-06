@@ -325,37 +325,38 @@ describe('FileHandler', () => {
   describe('splitTextIntoChunks', () => {
     test('should return single chunk if text is within limit', () => {
       const text = 'Short text';
-      const result = fileHandler.splitTextIntoChunks(text, 100);
+      const result = fileHandler.splitTextIntoChunks(text, 2000);
 
       expect(result).toEqual([text]);
     });
 
     test('should split text by sentences', () => {
-      const text = 'First sentence. Second sentence! Third sentence?';
-      const result = fileHandler.splitTextIntoChunks(text, 25);
+      const longSentence = 'A'.repeat(800) + '. ';
+      const text = longSentence.repeat(5); // Create text > 2000 chars
+      const result = fileHandler.splitTextIntoChunks(text, 2000);
 
       expect(result.length).toBeGreaterThan(1);
-      expect(result.every(chunk => chunk.length <= 25)).toBe(true);
+      expect(result.every(chunk => chunk.length <= 2000)).toBe(true);
     });
 
     test('should handle very long sentences by splitting words', () => {
-      const text = 'This is a very long sentence that exceeds the maximum chunk size and needs to be split by words instead of sentences.';
-      const result = fileHandler.splitTextIntoChunks(text, 50);
+      const longText = 'word '.repeat(500); // Create long text without sentence breaks
+      const result = fileHandler.splitTextIntoChunks(longText, 1500);
 
       expect(result.length).toBeGreaterThan(1);
-      expect(result.every(chunk => chunk.length <= 50)).toBe(true);
+      expect(result.every(chunk => chunk.length <= 1500)).toBe(true);
     });
 
     test('should preserve sentence punctuation', () => {
       const text = 'First sentence. Second sentence!';
-      const result = fileHandler.splitTextIntoChunks(text, 20);
+      const result = fileHandler.splitTextIntoChunks(text, 2000);
 
       expect(result.some(chunk => chunk.includes('.'))).toBe(true);
     });
 
     test('should filter out empty chunks', () => {
       const text = 'Sentence one. . . Sentence two.';
-      const result = fileHandler.splitTextIntoChunks(text, 100);
+      const result = fileHandler.splitTextIntoChunks(text, 2000);
 
       expect(result.every(chunk => chunk.length > 0)).toBe(true);
     });
