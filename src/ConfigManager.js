@@ -4,24 +4,53 @@ const os = require('os');
 const crypto = require('crypto');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
+const { safeValidateConfig, safeValidateApiKey, validateConfig } = require('./schemas');
 
+/**
+ * Manages configuration settings and API key encryption/decryption.
+ * Handles secure storage of OpenAI API keys with AES-256 encryption.
+ */
 class ConfigManager {
+  /**
+   * Creates a new ConfigManager instance.
+   * Sets up configuration directory paths in user's home directory.
+   */
   constructor() {
     this.configDir = path.join(os.homedir(), '.config', 'aiabm');
     this.configFile = path.join(this.configDir, 'config.json');
     this.cacheDir = path.join(this.configDir, 'cache');
   }
 
+  /**
+   * Initializes configuration and cache directories.
+   * Creates directories if they don't exist.
+   * @throws {Error} When directory creation fails
+   */
   async initialize() {
     await fs.ensureDir(this.configDir);
     await fs.ensureDir(this.cacheDir);
   }
 
+  /**
+   * Retrieves and decrypts configuration from file.
+   * Returns empty object if config doesn't exist or is corrupted.
+   * @returns {Object} Decrypted configuration object
+   */
   async getConfig() {
     try {
       if (await fs.pathExists(this.configFile)) {
-        const config = await fs.readJson(this.configFile);
-        return this.decryptConfig(config);
+        const rawConfig = await fs.readJson(this.configFile);
+        const decryptedConfig = this.decryptConfig(rawConfig);
+        
+        // Validate configuration structure
+        const validation = safeValidateConfig(decryptedConfig);
+        if (!validation.success) {
+          console.log(chalk.yellow('⚠️  Config file has invalid structure, will recreate'));
+          console.log(chalk.gray(`    Validation errors: ${validation.error.errors.map(e => e.message).join(', ')}`));
+          return {};
+        }
+        
+        return validation.data;
       }
     } catch (error) {
       console.log(chalk.yellow('⚠️  Config file corrupted, will recreate'));
@@ -29,16 +58,37 @@ class ConfigManager {
     return {};
   }
 
+  /**
+   * Encrypts and saves configuration to file.
+   * @param {Object} config - Configuration object to save
+   * @throws {Error} When file writing fails or validation fails
+   */
   async setConfig(config) {
+    // Validate configuration before saving
+    try {
+      validateConfig(config);
+    } catch (validationError) {
+      throw new Error(`Invalid configuration: ${validationError.errors?.map(e => e.message).join(', ') || validationError.message}`);
+    }
+    
     const encryptedConfig = this.encryptConfig(config);
     await fs.writeJson(this.configFile, encryptedConfig, { spaces: 2 });
   }
 
+  /**
+   * Encrypts API key in configuration using AES-256-CBC.
+   * Falls back to base64 encoding if crypto fails.
+   * @param {Object} config - Configuration object with API key
+   * @returns {Object} Configuration object with encrypted API key
+   */
   encryptConfig(config) {
-    if (!config.apiKey) return config;
+    if (!config.apiKey) {return config;}
 
     try {
-      const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
+      // Use more secure encryption with unique salt for each encryption
+      const SecurityUtils = require('./SecurityUtils');
+      const salt = SecurityUtils.generateSecureSalt(16);
+      const key = crypto.scryptSync('aiabm-secret', salt, 32);
       const iv = crypto.randomBytes(16);
       const cipher = crypto.createCipher('aes-256-cbc', key);
 
@@ -47,7 +97,8 @@ class ConfigManager {
 
       return {
         ...config,
-        apiKey: `${iv.toString('hex')}:${encrypted}`,
+        apiKey: `aes:${salt.toString('hex')}:${iv.toString('hex')}:${encrypted}`,
+        encryptionVersion: '2.0', // Track encryption version for future upgrades
       };
     } catch (error) {
       // Fallback to base64 encoding if crypto fails
@@ -59,20 +110,35 @@ class ConfigManager {
     }
   }
 
+  /**
+   * Decrypts API key from configuration.
+   * Handles both AES-encrypted and base64-encoded keys.
+   * @param {Object} config - Configuration object with encrypted API key
+   * @returns {Object} Configuration object with decrypted API key
+   */
   decryptConfig(config) {
-    if (!config.apiKey || !config.apiKey.includes(':')) return config;
+    if (!config.apiKey || !config.apiKey.includes(':')) {return config;}
 
     try {
       const parts = config.apiKey.split(':');
 
       if (parts[0] === 'basic') {
-        // Base64 encoded
+        // Base64 encoded (legacy)
         const decrypted = Buffer.from(parts[1], 'base64').toString('utf8');
         return { ...config, apiKey: decrypted };
+      } else if (parts[0] === 'aes' && parts.length === 4) {
+        // New AES encryption with salt (v2.0)
+        const [, saltHex, , encrypted] = parts;
+        const salt = Buffer.from(saltHex, 'hex');
+        const key = crypto.scryptSync('aiabm-secret', salt, 32);
+        const decipher = crypto.createDecipher('aes-256-cbc', key);
+        let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+        decrypted += decipher.final('utf8');
+        return { ...config, apiKey: decrypted };
       } else if (parts.length === 2) {
-        // AES encrypted
+        // Legacy AES encrypted (v1.0)
         const key = crypto.scryptSync('aiabm-secret', 'salt', 32);
-        const [ivHex, encrypted] = parts;
+        const [, encrypted] = parts;
         const decipher = crypto.createDecipher('aes-256-cbc', key);
         let decrypted = decipher.update(encrypted, 'hex', 'utf8');
         decrypted += decipher.final('utf8');
@@ -86,9 +152,16 @@ class ConfigManager {
     }
   }
 
+  /**
+   * Prompts user to enter their OpenAI API key.
+   * Validates key format and saves it securely.
+   * @returns {string} The entered API key
+   * @throws {Error} When API key validation or saving fails
+   */
   async promptForApiKey() {
     console.log(chalk.cyan('\n🔑 OpenAI API Key Setup'));
-    console.log(chalk.gray('Get your API key at: https://platform.openai.com/account/api-keys\n'));
+    console.log(chalk.gray('Get your API key at: https://platform.openai.com/account/api-keys'));
+    console.log(chalk.gray('💡 Tip: You can also set OPENAI_API_KEY or AIABM_API_KEY environment variable\n'));
 
     const { apiKey } = await inquirer.prompt([
       {
@@ -99,9 +172,14 @@ class ConfigManager {
           if (!input || input.length < 10) {
             return 'Please enter a valid API key';
           }
-          if (!input.startsWith('sk-')) {
-            return 'OpenAI API keys typically start with "sk-"';
+          
+          // Use Zod validation for API key format
+          const validation = safeValidateApiKey({ key: input });
+          if (!validation.success) {
+            const errorMessages = validation.error.errors.map(e => e.message);
+            return errorMessages.join(', ');
           }
+          
           return true;
         },
       },
@@ -115,6 +193,11 @@ class ConfigManager {
     return apiKey;
   }
 
+  /**
+   * Interactive API key management menu.
+   * Allows setting, testing, updating, or removing API keys.
+   * @throws {Error} When API key operations fail
+   */
   async manageApiKey() {
     const config = await this.getConfig();
     const hasKey = !!config.apiKey;
@@ -150,6 +233,11 @@ class ConfigManager {
     }
   }
 
+  /**
+   * Tests the stored API key by making a request to OpenAI API.
+   * Validates key by attempting to fetch available models.
+   * @throws {Error} When API test request fails
+   */
   async testApiKey() {
     const config = await this.getConfig();
     if (!config.apiKey) {
@@ -205,18 +293,62 @@ class ConfigManager {
     }
   }
 
+  /**
+   * Ensures an API key is available, checking environment variables first.
+   * Priority: 1. Environment variable, 2. Config file, 3. User prompt
+   * @returns {string} Valid API key
+   * @throws {Error} When API key cannot be obtained
+   */
   async ensureApiKey() {
-    const config = await this.getConfig();
-    if (!config.apiKey) {
-      return await this.promptForApiKey();
+    // 1. Check environment variables first (most secure)
+    const envApiKey = process.env.OPENAI_API_KEY || process.env.AIABM_API_KEY;
+    if (envApiKey) {
+      try {
+        // Validate environment API key
+        const validation = safeValidateApiKey({ key: envApiKey });
+        if (validation.success) {
+          return envApiKey;
+        } else {
+          console.log(chalk.yellow('⚠️  Invalid API key in environment variable, checking config file...'));
+        }
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Environment API key validation failed, checking config file...'));
+      }
     }
-    return config.apiKey;
+    
+    // 2. Check config file
+    const config = await this.getConfig();
+    if (config.apiKey) {
+      try {
+        // Validate stored API key
+        const validation = safeValidateApiKey({ key: config.apiKey });
+        if (validation.success) {
+          return config.apiKey;
+        } else {
+          console.log(chalk.yellow('⚠️  Stored API key is invalid, requesting new one...'));
+        }
+      } catch (error) {
+        console.log(chalk.yellow('⚠️  Stored API key validation failed, requesting new one...'));
+      }
+    }
+    
+    // 3. Prompt user for new API key
+    return await this.promptForApiKey();
   }
 
+  /**
+   * Returns the cache directory path.
+   * @returns {string} Path to cache directory
+   */
   getCacheDir() {
     return this.cacheDir;
   }
 
+  /**
+   * Clears all cached files and directories.
+   * Removes voice previews and temporary files.
+   * @throws {Error} When cache clearing fails
+   */
   async clearCache() {
     try {
       await fs.emptyDir(this.cacheDir);

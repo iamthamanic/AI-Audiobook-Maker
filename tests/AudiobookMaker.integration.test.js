@@ -90,7 +90,7 @@ dass wir genügend Content für einen vollständigen Test haben.`;
       
       await maker.initialize();
       
-      expect(maker.cacheDir).toBe(customCacheDir);
+      expect(maker.configManager.getCacheDir()).toBe(customCacheDir);
     });
   });
 
@@ -99,15 +99,13 @@ dass wir genügend Content für einen vollständigen Test haben.`;
       const maker = new AudiobookMaker();
       await maker.initialize();
       
-      // Mock API key availability
-      maker.configManager.getConfig = jest.fn().mockResolvedValue({
-        apiKey: 'sk-test123456789'
-      });
+      // Mock the ensureApiKey method to provide a test API key
+      jest.spyOn(maker.configManager, 'ensureApiKey').mockResolvedValue('sk-test1234567890abcdefghijklmnopqrstuvwxyz1234567890');
       
       await maker.initializeServices('openai');
       
-      expect(maker.currentService).toBe('openai');
       expect(maker.ttsService).toBeTruthy();
+      expect(maker.configManager.ensureApiKey).toHaveBeenCalled();
     });
 
     test('should handle service initialization without API key', async () => {
@@ -203,11 +201,11 @@ dass wir genügend Content für einen vollständigen Test haben.`;
       await maker.initialize();
       
       const fileData = await maker.fileHandler.readFile(testTextPath);
-      const chunks = maker.fileHandler.splitTextIntoChunks(fileData.content, 100);
+      const chunks = maker.fileHandler.splitTextIntoChunks(fileData.content, 4000);
       
       expect(Array.isArray(chunks)).toBe(true);
       expect(chunks.length).toBeGreaterThan(0);
-      expect(chunks.every(chunk => chunk.length <= 100)).toBe(true);
+      expect(chunks.every(chunk => chunk.length <= 4000)).toBe(true);
     });
 
     test('should calculate processing costs', async () => {

@@ -3,8 +3,17 @@ const path = require('path');
 const pdfParse = require('pdf-parse');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
+const { validateFileData } = require('./schemas');
 
+/**
+ * Handles file operations including validation, reading, and text processing.
+ * Supports PDF and TXT files with size limitations and smart text chunking.
+ */
 class FileHandler {
+  /**
+   * Creates a new FileHandler instance.
+   * Defines supported file extensions and maximum file sizes.
+   */
   constructor() {
     this.supportedExtensions = ['.txt', '.pdf'];
     this.maxFileSizes = {
@@ -13,6 +22,12 @@ class FileHandler {
     };
   }
 
+  /**
+   * Interactive file selection with multiple input methods.
+   * Supports browsing, recent files, manual path entry, and drag-and-drop.
+   * @returns {string|null} Selected file path or null if cancelled
+   * @throws {Error} When file selection fails
+   */
   async selectFile() {
     console.log(chalk.cyan('\n📁 File Selection'));
     console.log(
@@ -87,7 +102,7 @@ class FileHandler {
       },
     ]);
 
-    if (selectedFile === 'back') return null;
+    if (selectedFile === 'back') {return null;}
     return selectedFile;
   }
 
@@ -102,7 +117,7 @@ class FileHandler {
         name: 'filePath',
         message: 'Drop file here or enter path:',
         validate: async (input) => {
-          if (!input) return 'Please provide a file path';
+          if (!input) {return 'Please provide a file path';}
 
           // Clean up the path (remove quotes, etc.)
           const cleanPath = this.cleanFilePath(input);
@@ -132,7 +147,7 @@ class FileHandler {
         name: 'filePath',
         message: 'Enter file path:',
         validate: async (input) => {
-          if (!input) return 'Please provide a file path';
+          if (!input) {return 'Please provide a file path';}
 
           const cleanPath = this.cleanFilePath(input);
 
@@ -154,6 +169,12 @@ class FileHandler {
     return filePath;
   }
 
+  /**
+   * Cleans and normalizes file path input from user.
+   * Removes quotes and handles escaped spaces.
+   * @param {string} input - Raw file path input
+   * @returns {string} Cleaned file path
+   */
   cleanFilePath(input) {
     // Remove quotes and clean up the path
     return input
@@ -162,12 +183,17 @@ class FileHandler {
       .replace(/\\ /g, ' '); // Handle escaped spaces
   }
 
+  /**
+   * Formats file size in human-readable format.
+   * @param {string} filePath - Path to file
+   * @returns {string} Formatted file size (e.g., '1.5 MB')
+   */
   formatFileSize(filePath) {
     try {
       const stats = fs.statSync(filePath);
       const bytes = stats.size;
 
-      if (bytes === 0) return '0 Bytes';
+      if (bytes === 0) {return '0 Bytes';}
 
       const k = 1024;
       const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -179,6 +205,13 @@ class FileHandler {
     }
   }
 
+  /**
+   * Validates file extension, size, and accessibility.
+   * @param {string} filePath - Path to file to validate
+   * @returns {Object} Validation result with valid flag and error message
+   * @returns {boolean} returns.valid - Whether file is valid
+   * @returns {string} [returns.error] - Error message if validation fails
+   */
   async validateFile(filePath) {
     try {
       const stats = await fs.stat(filePath);
@@ -209,6 +242,17 @@ class FileHandler {
     }
   }
 
+  /**
+   * Reads and processes file content based on file type.
+   * @param {string} filePath - Path to file to read
+   * @returns {Object} File data with content and metadata
+   * @returns {string} returns.content - Extracted text content
+   * @returns {number} returns.characterCount - Number of characters
+   * @returns {number} returns.wordCount - Number of words
+   * @returns {string} returns.type - File type ('text' or 'pdf')
+   * @returns {number} [returns.pageCount] - Number of pages (PDF only)
+   * @throws {Error} When file reading fails
+   */
   async readFile(filePath) {
     const ext = path.extname(filePath).toLowerCase();
 
@@ -226,6 +270,12 @@ class FileHandler {
     }
   }
 
+  /**
+   * Reads and processes text files.
+   * @param {string} filePath - Path to text file
+   * @returns {Object} Text file data with content and statistics
+   * @throws {Error} When file is empty or too large
+   */
   async readTextFile(filePath) {
     const content = await fs.readFile(filePath, 'utf-8');
 
@@ -237,14 +287,29 @@ class FileHandler {
       throw new Error('Text file too large (exceeds 1M characters)');
     }
 
-    return {
+    const fileData = {
       content: content.trim(),
       characterCount: content.length,
       wordCount: content.split(/\s+/).filter((word) => word.length > 0).length,
       type: 'text',
     };
+    
+    // Validate file data structure
+    try {
+      validateFileData(fileData);
+    } catch (validationError) {
+      throw new Error(`Invalid file data: ${validationError.errors?.map(e => e.message).join(', ') || validationError.message}`);
+    }
+    
+    return fileData;
   }
 
+  /**
+   * Reads and extracts text from PDF files.
+   * @param {string} filePath - Path to PDF file
+   * @returns {Object} PDF file data with extracted text and metadata
+   * @throws {Error} When PDF has no readable text
+   */
   async readPdfFile(filePath) {
     const dataBuffer = await fs.readFile(filePath);
     const data = await pdfParse(dataBuffer);
@@ -255,16 +320,40 @@ class FileHandler {
 
     const content = data.text.trim();
 
-    return {
+    const fileData = {
       content,
       characterCount: content.length,
       wordCount: content.split(/\s+/).filter((word) => word.length > 0).length,
       pageCount: data.numpages,
       type: 'pdf',
     };
+    
+    // Validate file data structure
+    try {
+      validateFileData(fileData);
+    } catch (validationError) {
+      throw new Error(`Invalid file data: ${validationError.errors?.map(e => e.message).join(', ') || validationError.message}`);
+    }
+    
+    return fileData;
   }
 
+  /**
+   * Splits text into chunks respecting sentence boundaries.
+   * Ensures chunks don't exceed maxChunkSize while maintaining readability.
+   * @param {string} text - Text to split into chunks
+   * @param {number} [maxChunkSize=4000] - Maximum characters per chunk
+   * @returns {string[]} Array of text chunks
+   */
   splitTextIntoChunks(text, maxChunkSize = 4000) {
+    // Validate input parameters
+    if (typeof text !== 'string' || text.trim().length === 0) {
+      throw new Error('Text must be a non-empty string');
+    }
+    
+    if (typeof maxChunkSize !== 'number' || maxChunkSize < 1000 || maxChunkSize > 10000) {
+      throw new Error('maxChunkSize must be a number between 1000 and 10000');
+    }
     if (text.length <= maxChunkSize) {
       return [text];
     }
@@ -275,7 +364,7 @@ class FileHandler {
 
     for (let sentence of sentences) {
       sentence = sentence.trim();
-      if (!sentence) continue;
+      if (!sentence) {continue;}
 
       // Add sentence back the punctuation
       sentence += '.';
@@ -295,12 +384,12 @@ class FileHandler {
             if (wordChunk.length + word.length + 1 <= maxChunkSize) {
               wordChunk += (wordChunk ? ' ' : '') + word;
             } else {
-              if (wordChunk) chunks.push(wordChunk.trim());
+              if (wordChunk) {chunks.push(wordChunk.trim());}
               wordChunk = word;
             }
           }
 
-          if (wordChunk) currentChunk = wordChunk;
+          if (wordChunk) {currentChunk = wordChunk;}
         }
       }
     }
@@ -312,7 +401,17 @@ class FileHandler {
     return chunks.filter((chunk) => chunk.length > 0);
   }
 
-  calculateCost(text, model = 'tts-1') {
+  /**
+   * Calculates estimated cost for TTS conversion.
+   * Based on OpenAI TTS pricing of $0.015 per 1,000 characters.
+   * @param {string} text - Text to calculate cost for
+   * @param {string} [model='tts-1'] - TTS model (currently unused in calculation)
+   * @returns {Object} Cost calculation results
+   * @returns {number} returns.characterCount - Number of characters
+   * @returns {number} returns.estimatedCost - Estimated cost in USD
+   * @returns {number} returns.chunks - Number of processing chunks
+   */
+  calculateCost(text, _model = 'tts-1') {
     const charCount = text.length;
     const costPerThousand = 0.015; // $0.015 per 1K characters
     return {

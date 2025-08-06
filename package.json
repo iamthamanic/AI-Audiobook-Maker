@@ -36,25 +36,26 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "ink": "^4.4.0",
-    "react": "^18.2.0",
-    "inquirer": "^8.2.6",
-    "prompts": "^2.4.2",
     "axios": "^1.6.0",
     "chalk": "^4.1.2",
-    "ora": "^5.4.1",
-    "play-sound": "^1.1.6",
-    "pdf-parse": "^1.1.1",
-    "fs-extra": "^11.2.0",
     "commander": "^11.1.0",
-    "node-gyp": "^10.0.0"
+    "fs-extra": "^11.2.0",
+    "ink": "^4.4.0",
+    "inquirer": "^12.9.0",
+    "node-gyp": "^10.0.0",
+    "ora": "^5.4.1",
+    "pdf-parse": "^1.1.1",
+    "play-sound": "^1.1.6",
+    "prompts": "^2.4.2",
+    "react": "^18.2.0",
+    "zod": "^4.0.15"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "@jest/globals": "^29.7.0",
     "eslint": "^8.57.0",
+    "jest": "^29.7.0",
     "prettier": "^3.2.5",
-    "snyk": "^1.1291.0",
-    "@jest/globals": "^29.7.0"
+    "snyk": "^1.1291.0"
   },
   "files": [
     "cli.js",

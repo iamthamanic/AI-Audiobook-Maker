@@ -79,7 +79,7 @@ describe('CLI', () => {
       const fs = require('fs');
       const cliContent = fs.readFileSync(require.resolve('../cli.js'), 'utf8');
       
-      expect(cliContent).toContain('v4.0.6');
+      expect(cliContent).toContain('v5.0.2');
     });
   });
 

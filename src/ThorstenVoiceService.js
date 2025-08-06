@@ -74,7 +74,7 @@ class ThorstenVoiceService {
     return audioFiles;
   }
 
-  async generateVoicePreview(voice, options = {}) {
+  async generateVoicePreview(voice, _options = {}) {
     console.log(chalk.cyan('🇩🇪 Generating voice preview...'));
 
     try {
@@ -355,9 +355,8 @@ print("TTS generation completed successfully")
 
       console.log(chalk.yellow(`   Warning: Using ${version} - Coqui TTS works best with Python 3.9-3.11`));
       return version;
-      
     } catch (error) {
-      throw error;
+      throw new Error(`Failed to check Python installation: ${error.message}`);
     }
   }
 

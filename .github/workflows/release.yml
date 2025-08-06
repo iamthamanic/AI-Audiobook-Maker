@@ -1,0 +1,125 @@
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    name: 🧪 Pre-Release Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run full test suite
+        run: npm run test
+
+      - name: 🔍 Run linting
+        run: npm run lint
+
+      - name: 🔒 Security audit
+        run: npm audit --audit-level moderate
+
+  publish:
+    name: 📦 Publish to NPM
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Build package
+        run: npm pack
+
+      - name: 📤 Publish to NPM
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  release:
+    name: 🎉 Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [test, publish]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          # Extract version from tag
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          
+          # Extract changelog section for this version
+          if [ -f CHANGELOG.md ]; then
+            # Get changelog content between version headers
+            sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' > release_notes.md
+            
+            # If changelog is empty, create a basic one
+            if [ ! -s release_notes.md ]; then
+              echo "### Changes in $VERSION" > release_notes.md
+              echo "See the full changelog for details." >> release_notes.md
+            fi
+          else
+            echo "### Changes in $VERSION" > release_notes.md
+            echo "Release notes not available." >> release_notes.md
+          fi
+
+      - name: 🎉 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: 🎧 AI Audiobook Maker ${{ steps.changelog.outputs.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+
+  notify:
+    name: 📢 Release Notification
+    runs-on: ubuntu-latest
+    needs: [test, publish, release]
+    if: always()
+
+    steps:
+      - name: 🎉 Success notification
+        if: needs.release.result == 'success'
+        run: |
+          echo "🚀 Release successful!"
+          echo "📦 Package published to NPM"
+          echo "🎉 GitHub release created"
+
+      - name: ❌ Failure notification
+        if: needs.test.result == 'failure' || needs.publish.result == 'failure'
+        run: |
+          echo "❌ Release failed!"
+          echo "🔧 Check the logs for details"
+          exit 1

@@ -8,9 +8,16 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const path = require('path');
 const fs = require('fs-extra');
-const ora = require('ora');
 
+/**
+ * Main class for creating audiobooks from text and PDF files.
+ * Supports multiple TTS providers (OpenAI, Thorsten-Voice).
+ */
 class AudiobookMaker {
+  /**
+   * Creates a new AudiobookMaker instance.
+   * Initializes service instances to null - they are created during initialization.
+   */
   constructor() {
     this.configManager = null;
     this.fileHandler = null;
@@ -19,6 +26,11 @@ class AudiobookMaker {
     this.progressManager = null;
   }
 
+  /**
+   * Initializes the AudiobookMaker with required services.
+   * Sets up configuration manager, file handler, and progress tracking.
+   * @throws {Error} When initialization fails
+   */
   async initialize() {
     this.configManager = new ConfigManager();
     await this.configManager.initialize();
@@ -28,10 +40,20 @@ class AudiobookMaker {
     await this.progressManager.initialize();
   }
 
+  /**
+   * Opens the configuration management interface.
+   * Allows users to set, update, or remove their API keys.
+   * @throws {Error} When configuration management fails
+   */
   async manageConfig() {
     await this.configManager.manageApiKey();
   }
 
+  /**
+   * Starts the interactive mode with main menu.
+   * First checks for resumable sessions, then shows main menu options.
+   * @throws {Error} When interactive mode fails
+   */
   async runInteractive() {
     // Check for resumable sessions first
     const resumeSession = await this.progressManager.showResumeDialog();
@@ -44,6 +66,7 @@ class AudiobookMaker {
   }
 
   async showMainMenu() {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       console.log(chalk.cyan('\n🎧 AI Audiobook Maker - Main Menu'));
       console.log(chalk.gray('Use arrow keys to navigate, Enter to select\n'));
@@ -95,7 +118,7 @@ class AudiobookMaker {
 
       // Select file
       const filePath = await this.fileHandler.selectFile();
-      if (!filePath) return;
+      if (!filePath) {return;}
 
       // Process the file
       await this.processFile(filePath);
@@ -104,6 +127,16 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Processes a file and converts it to audiobook.
+   * Can be called from CLI or interactive mode.
+   * @param {string} filePath - Path to the input file (PDF or text)
+   * @param {Object} cliOptions - CLI options (voice, speed, model)
+   * @param {string} [cliOptions.voice] - Voice to use for TTS
+   * @param {number} [cliOptions.speed] - Speech speed (0.25-4.0)
+   * @param {string} [cliOptions.model] - TTS model to use
+   * @throws {Error} When file processing fails
+   */
   async processFile(filePath, cliOptions = {}) {
     try {
       console.log(chalk.cyan('\n🔍 Analyzing file...'));
@@ -127,7 +160,7 @@ class AudiobookMaker {
 
       // Get conversion settings
       const settings = await this.getConversionSettings(cliOptions);
-      if (!settings) return;
+      if (!settings) {return;}
 
       // Create new session
       const session = await this.progressManager.createSession(filePath, settings);
@@ -143,6 +176,12 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Displays file information including size, cost estimates, and processing details.
+   * @param {Object} fileData - File metadata (type, characterCount, wordCount, pageCount)
+   * @param {Object} costInfo - Cost calculation results
+   * @param {number} chunkCount - Number of text chunks for processing
+   */
   displayFileInfo(fileData, costInfo, chunkCount) {
     console.log(chalk.green('\n✅ File analyzed successfully!'));
     console.log(chalk.white('\n📊 File Information:'));
@@ -196,7 +235,7 @@ class AudiobookMaker {
 
     // Provider selection
     const provider = await this.showProviderSelection();
-    if (!provider) return null;
+    if (!provider) {return null;}
 
     // Initialize services based on selected provider
     try {
@@ -208,7 +247,7 @@ class AudiobookMaker {
 
     // Interactive voice selection based on provider
     const voice = await this.voicePreview.showVoiceSelection(provider);
-    if (!voice) return null;
+    if (!voice) {return null;}
 
     // Get advanced settings
     const advancedSettings = await this.voicePreview.getAdvancedSettings(provider);
@@ -220,11 +259,16 @@ class AudiobookMaker {
     };
   }
 
+  /**
+   * Initializes TTS services based on the selected provider.
+   * @param {string} [provider='openai'] - TTS provider ('openai' or 'thorsten')
+   * @throws {Error} When service initialization fails or provider is unavailable
+   */
   async initializeServices(provider = 'openai') {
     if (provider === 'openai') {
       // Check if we have a valid API key for OpenAI
       const apiKey = await this.configManager.ensureApiKey();
-      if (!apiKey) throw new Error('OpenAI API key required');
+      if (!apiKey) {throw new Error('OpenAI API key required');}
 
       this.ttsService = new TTSService(apiKey, this.configManager.getCacheDir());
     } else if (provider === 'thorsten') {
@@ -236,6 +280,8 @@ class AudiobookMaker {
         console.log(chalk.yellow('⚠️  Thorsten-Voice not found or not properly installed'));
         throw new Error('Thorsten-Voice not available');
       }
+    } else {
+      throw new Error(`Unknown TTS provider: ${provider}`);
     }
 
     this.voicePreview = new VoicePreview(this.ttsService);
@@ -431,6 +477,15 @@ class AudiobookMaker {
   }
 
 
+  /**
+   * Converts text chunks to audio files and combines them.
+   * Creates output directory, processes chunks, and handles final output options.
+   * @param {Object} session - Processing session data
+   * @param {string[]} chunks - Text chunks to convert
+   * @param {Object} fileData - Original file metadata
+   * @param {Object} settings - Conversion settings (voice, speed, model, outputOptions)
+   * @throws {Error} When audio conversion fails
+   */
   async convertToAudio(session, chunks, fileData, settings) {
     const baseOutputDir = settings.outputDirectory || path.join(process.cwd(), 'audiobook_output');
     const outputDir = path.join(
@@ -507,6 +562,15 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Resumes a previously interrupted conversion session.
+   * Continues from the last completed chunk and combines all audio files.
+   * @param {Object} session - Session data to resume
+   * @param {Object} [additionalData] - Optional pre-loaded chunks and fileData
+   * @param {string[]} [additionalData.chunks] - Pre-processed text chunks
+   * @param {Object} [additionalData.fileData] - Pre-loaded file metadata
+   * @throws {Error} When session resume fails
+   */
   async resumeSession(session, additionalData = null) {
     console.log(chalk.cyan(`\n🔄 Resuming session: ${session.fileName}`));
 
@@ -617,6 +681,14 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Displays a summary of the completed conversion.
+   * Shows statistics, costs, and offers to open the output folder.
+   * @param {Object} session - Completed session data
+   * @param {Object} fileData - Original file metadata
+   * @param {number} audioFileCount - Number of audio files created
+   * @throws {Error} When summary display fails
+   */
   async displayCompletionSummary(session, fileData, audioFileCount) {
     console.log(chalk.green('\n🎊 Conversion Summary:'));
     console.log(chalk.white(`   📖 Source: ${session.fileName}`));
@@ -650,6 +722,11 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Opens the output folder in the system file manager.
+   * Cross-platform support for macOS, Windows, and Linux.
+   * @param {string} outputDir - Path to the output directory
+   */
   async openOutputFolder(outputDir) {
     try {
       const { exec } = require('child_process');

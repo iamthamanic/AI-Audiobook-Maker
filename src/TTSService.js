@@ -5,8 +5,18 @@ const crypto = require('crypto');
 const chalk = require('chalk');
 const ora = require('ora');
 const { getPreviewText, detectVoiceLanguage, getPreviewCacheFilename } = require('./PreviewTexts');
+const { safeValidateTTSOptions } = require('./schemas');
 
+/**
+ * OpenAI Text-to-Speech service integration.
+ * Handles speech generation, voice previews, and audio file processing.
+ */
 class TTSService {
+  /**
+   * Creates a new TTSService instance.
+   * @param {string} apiKey - OpenAI API key for authentication
+   * @param {string} cacheDir - Directory for caching voice previews
+   */
   constructor(apiKey, cacheDir) {
     this.apiKey = apiKey;
     this.cacheDir = cacheDir;
@@ -16,20 +26,34 @@ class TTSService {
     // Preview text is now dynamically generated based on voice language
   }
 
+  /**
+   * Generates speech audio from text using OpenAI TTS API.
+   * @param {string} text - Text to convert to speech
+   * @param {Object} [options={}] - TTS options
+   * @param {string} [options.voice='alloy'] - Voice to use
+   * @param {string} [options.model='tts-1'] - TTS model to use
+   * @param {number} [options.speed=1.0] - Speech speed (0.25-4.0)
+   * @param {string} [options.format='mp3'] - Output format
+   * @returns {Buffer} Audio data buffer
+   * @throws {Error} When API request fails or parameters are invalid
+   */
   async generateSpeech(text, options = {}) {
-    const { voice = 'alloy', model = 'tts-1', speed = 1.0, format = 'mp3' } = options;
-
-    if (!this.voices.includes(voice)) {
-      throw new Error(`Invalid voice: ${voice}. Available: ${this.voices.join(', ')}`);
+    // Validate input text
+    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+      throw new Error('Text input is required and must be a non-empty string');
     }
-
-    if (!this.models.includes(model)) {
-      throw new Error(`Invalid model: ${model}. Available: ${this.models.join(', ')}`);
+    
+    // Set defaults and validate TTS options using Zod
+    const defaultOptions = { voice: 'alloy', model: 'tts-1', speed: 1.0, format: 'mp3' };
+    const mergedOptions = { ...defaultOptions, ...options };
+    
+    const validation = safeValidateTTSOptions(mergedOptions);
+    if (!validation.success) {
+      const errorMessages = validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      throw new Error(`Invalid TTS options: ${errorMessages.join(', ')}`);
     }
-
-    if (speed < 0.25 || speed > 4.0) {
-      throw new Error('Speed must be between 0.25 and 4.0');
-    }
+    
+    const { voice, model, speed, format } = validation.data;
 
     try {
       const response = await axios.post(
@@ -72,6 +96,14 @@ class TTSService {
     }
   }
 
+  /**
+   * Generates or retrieves cached voice preview.
+   * Uses language-appropriate preview text based on voice.
+   * @param {string} voice - Voice name to generate preview for
+   * @param {Object} [options={}] - Additional TTS options
+   * @returns {string} Path to cached preview audio file
+   * @throws {Error} When preview generation fails
+   */
   async generateVoicePreview(voice, options = {}) {
     // Detect voice language and get appropriate preview text
     const language = detectVoiceLanguage(voice);
@@ -149,8 +181,40 @@ class TTSService {
     return hash.digest('hex');
   }
 
+  /**
+   * Processes multiple text chunks into audio files.
+   * Includes progress tracking and rate limiting.
+   * @param {string[]} chunks - Array of text chunks to process
+   * @param {Object} [options={}] - Processing options
+   * @param {string} [options.voice='alloy'] - Voice to use
+   * @param {string} [options.model='tts-1'] - TTS model
+   * @param {number} [options.speed=1.0] - Speech speed
+   * @param {string} [options.outputDir='./output'] - Output directory
+   * @param {Function} [onProgress] - Progress callback function
+   * @returns {string[]} Array of generated audio file paths
+   * @throws {Error} When chunk processing fails
+   */
   async processTextChunks(chunks, options = {}, onProgress = null) {
-    const { voice = 'alloy', model = 'tts-1', speed = 1.0, outputDir = './output' } = options;
+    // Validate input chunks
+    if (!Array.isArray(chunks) || chunks.length === 0) {
+      throw new Error('Chunks must be a non-empty array');
+    }
+    
+    if (chunks.some(chunk => typeof chunk !== 'string' || chunk.trim().length === 0)) {
+      throw new Error('All chunks must be non-empty strings');
+    }
+    
+    // Validate and set defaults for options
+    const defaultOptions = { voice: 'alloy', model: 'tts-1', speed: 1.0, outputDir: './output' };
+    const mergedOptions = { ...defaultOptions, ...options };
+    
+    const validation = safeValidateTTSOptions(mergedOptions);
+    if (!validation.success) {
+      const errorMessages = validation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`);
+      throw new Error(`Invalid processing options: ${errorMessages.join(', ')}`);
+    }
+    
+    const { voice, model, speed, outputDir } = mergedOptions;
 
     await fs.ensureDir(outputDir);
 
@@ -198,6 +262,13 @@ class TTSService {
     return audioFiles;
   }
 
+  /**
+   * Concatenates multiple audio files into single output file using FFmpeg.
+   * @param {string[]} audioFiles - Array of audio file paths to combine
+   * @param {string} outputPath - Path for the combined output file
+   * @returns {string} Path to the combined audio file
+   * @throws {Error} When FFmpeg is not available or concatenation fails
+   */
   async concatenateAudioFiles(audioFiles, outputPath) {
     const { exec } = require('child_process');
     const { promisify } = require('util');
@@ -237,16 +308,21 @@ class TTSService {
     }
   }
 
+  /**
+   * Tests the API key validity by making a small TTS request.
+   * @returns {boolean} True if API key is valid
+   * @throws {Error} When API key is invalid or request fails
+   */
   async testApiKey() {
-    try {
-      // Test with a very short text
-      await this.generateSpeech('Test', { voice: 'alloy', model: 'tts-1' });
-      return true;
-    } catch (error) {
-      throw error;
-    }
+    // Test with a very short text
+    await this.generateSpeech('Test', { voice: 'alloy', model: 'tts-1' });
+    return true;
   }
 
+  /**
+   * Returns available voice options.
+   * @returns {string[]} Array of available voice names
+   */
   getVoices() {
     return this.voices;
   }
@@ -255,6 +331,12 @@ class TTSService {
     return this.models;
   }
 
+  /**
+   * Estimates processing time based on character count and model.
+   * @param {number} characterCount - Number of characters to process
+   * @param {string} [model='tts-1'] - TTS model to use
+   * @returns {string} Formatted time estimate (e.g., '2m 30s')
+   */
   estimateProcessingTime(characterCount, model = 'tts-1') {
     // Rough estimates based on OpenAI TTS performance
     const charsPerSecond = model === 'tts-1-hd' ? 50 : 100;
@@ -270,6 +352,16 @@ class TTSService {
     }
   }
 
+  /**
+   * Calculates estimated cost for TTS conversion.
+   * @param {number} characterCount - Number of characters to process
+   * @param {string} [model='tts-1'] - TTS model (affects pricing)
+   * @returns {Object} Cost calculation details
+   * @returns {number} returns.characterCount - Input character count
+   * @returns {number} returns.estimatedCost - Estimated cost in USD
+   * @returns {number} returns.costPerThousand - Rate per 1,000 characters
+   * @returns {string} returns.model - Model used for calculation
+   */
   calculateCost(characterCount, model = 'tts-1') {
     const costPerThousand = 0.015; // $0.015 per 1K characters
     return {

@@ -3,7 +3,6 @@
 const { program } = require('commander');
 const chalk = require('chalk');
 const fs = require('fs-extra');
-const path = require('path');
 const AudiobookMaker = require('./src/AudiobookMaker');
 
 async function main() {
@@ -74,7 +73,7 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   console.error(chalk.red(`❌ Unhandled rejection: ${reason}`));
   process.exit(1);
 });

@@ -1,0 +1,153 @@
+name: 🔬 Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: 🧪 Test Suite
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Run ESLint
+        run: npm run lint
+
+      - name: 🧪 Run tests with coverage
+        run: npm run test
+        env:
+          # Set a dummy API key for tests that need it
+          AIABM_API_KEY: sk-test1234567890abcdefghijklmnopqrstuvwxyz1234567890
+
+      - name: 📊 Upload coverage to Codecov
+        if: matrix.node-version == '18.x'
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔒 Run security audit
+        run: npm audit --audit-level moderate
+
+      - name: 🛡️ Run Snyk security scan
+        run: npm run security
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+  quality:
+    name: 📐 Code Quality
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: ✨ Check code formatting
+        run: npm run format -- --check
+
+      - name: 🧹 Run quality checks
+        run: npm run quality
+        continue-on-error: true
+
+  build-test:
+    name: 🔨 Build Test
+    runs-on: ${{ matrix.os }}
+    needs: test
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [18.x]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔨 Test CLI installation
+        run: |
+          npm pack
+          npm install -g aiabm-*.tgz
+
+      - name: ✅ Test CLI functionality
+        run: aiabm --help
+
+      - name: 🧹 Cleanup
+        run: npm uninstall -g aiabm
+        if: always()
+
+  notify:
+    name: 📢 Notification
+    runs-on: ubuntu-latest
+    needs: [test, security, quality, build-test]
+    if: always()
+
+    steps:
+      - name: 📢 Notify success
+        if: needs.test.result == 'success' && needs.build-test.result == 'success'
+        run: |
+          echo "✅ All CI checks passed successfully!"
+          echo "🎉 Code quality: GOOD"
+
+      - name: 📢 Notify failure
+        if: needs.test.result == 'failure' || needs.build-test.result == 'failure'
+        run: |
+          echo "❌ CI checks failed"
+          echo "🔧 Please check the failed jobs above"
+          exit 1

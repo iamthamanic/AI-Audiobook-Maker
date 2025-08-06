@@ -15,10 +15,10 @@ class VoicePreview {
   }
 
   async showVoiceSelection(provider = 'openai') {
-    console.log(chalk.cyan(`\n🎤 Voice Selection & Preview (${provider.toUpperCase()})`));
+    const providerName = provider || 'openai';
+    console.log(chalk.cyan(`\n🎤 Voice Selection & Preview (${providerName.toUpperCase()})`));
     console.log(chalk.gray('Listen to each voice before making your choice\n'));
 
-    const voices = this.ttsService.getVoices();
     const { action } = await inquirer.prompt([
       {
         type: 'list',
@@ -42,7 +42,7 @@ class VoicePreview {
     }
   }
 
-  async previewAllVoices(provider = 'openai') {
+  async previewAllVoices(_provider = 'openai') {
     console.log(chalk.cyan('\n🎵 Generating previews for all voices...'));
 
     try {
@@ -71,7 +71,7 @@ class VoicePreview {
     console.log(chalk.green('\n✅ Voice previews ready!'));
     console.log(chalk.gray('Preview text: "' + this.ttsService.previewText + '"\n'));
 
-    let selectedVoice = null;
+    const selectedVoice = null;
 
     while (!selectedVoice) {
       const choices = availableVoices.map((voice) => {
@@ -164,7 +164,7 @@ class VoicePreview {
     return await this.playPreviewsAndSelect(retryResults.previews, retryResults.errors);
   }
 
-  async selectVoiceDirect(provider = 'openai') {
+  async selectVoiceDirect(_provider = 'openai') {
     const voices = this.ttsService.getVoices();
 
     // Handle both string voices (OpenAI) and object voices (Kyutai)
@@ -268,7 +268,7 @@ class VoicePreview {
       case 'win32': // Windows
         command = `powershell -c "Add-Type -AssemblyName presentationCore; $mediaPlayer = New-Object system.windows.media.mediaplayer; $mediaPlayer.open('${filePath}'); $mediaPlayer.Play(); Start-Sleep -s 12; $mediaPlayer.Stop()"`;
         break;
-      case 'linux': // Linux
+      case 'linux': { // Linux
         // Try different audio players
         const players = ['ffplay', 'mpv', 'vlc', 'mplayer'];
         let playerFound = false;
@@ -291,6 +291,7 @@ class VoicePreview {
           throw new Error('No audio player found. Please install ffplay, mpv, vlc, or mplayer');
         }
         break;
+      }
       default:
         throw new Error(`Unsupported platform: ${this.platform}`);
     }
@@ -306,8 +307,9 @@ class VoicePreview {
     }
   }
 
-  async getAdvancedSettings(provider = 'openai') {
-    console.log(chalk.cyan(`\n⚙️  Advanced Settings (${provider.toUpperCase()})`));
+  async getAdvancedSettings(_provider = 'openai') {
+    const providerName = _provider || 'openai';
+    console.log(chalk.cyan(`\n⚙️  Advanced Settings (${providerName.toUpperCase()})`));
 
     const promptFields = [
       {
@@ -326,7 +328,7 @@ class VoicePreview {
     ];
 
     // Add provider-specific settings
-    if (provider === 'openai') {
+    if (providerName === 'openai') {
       promptFields.push({
         type: 'list',
         name: 'model',
@@ -337,7 +339,7 @@ class VoicePreview {
         ],
         default: 'tts-1',
       });
-    } else if (provider === 'kyutai') {
+    } else if (providerName === 'kyutai') {
       promptFields.push({
         type: 'list',
         name: 'model',

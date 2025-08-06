@@ -202,7 +202,7 @@ class ProgressManager {
   }
 
   async confirmResume(session) {
-    if (!session) return null;
+    if (!session) {return null;}
 
     const progress = `${session.progress.completedChunks}/${session.progress.totalChunks}`;
     const timeAgo = this.getTimeAgo(session.updatedAt);
@@ -262,8 +262,8 @@ class ProgressManager {
         name: 'filePath',
         message: 'Enter the new path to the file:',
         validate: async (input) => {
-          if (!input) return 'Please provide a file path';
-          if (!(await fs.pathExists(input))) return 'File does not exist';
+          if (!input) {return 'Please provide a file path';}
+          if (!(await fs.pathExists(input))) {return 'File does not exist';}
 
           // Check if it's the same file by comparing size and name
           const stats = await fs.stat(input);
@@ -321,10 +321,10 @@ class ProgressManager {
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffMins < 1) {return 'just now';}
+    if (diffMins < 60) {return `${diffMins}m ago`;}
+    if (diffHours < 24) {return `${diffHours}h ago`;}
+    if (diffDays < 7) {return `${diffDays}d ago`;}
     return past.toLocaleDateString();
   }
 
