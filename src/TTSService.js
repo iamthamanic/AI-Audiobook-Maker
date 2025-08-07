@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const chalk = require('chalk');
 const ora = require('ora');
+const UIHelpers = require('./UIHelpers');
 const { getPreviewText, detectVoiceLanguage, getPreviewCacheFilename } = require('./PreviewTexts');
 const { safeValidateTTSOptions } = require('./schemas');
 
@@ -228,7 +229,11 @@ class TTSService {
       const chunk = chunks[i];
       const chunkNumber = i + 1;
 
-      const spinner = ora(`Processing chunk ${chunkNumber}/${totalChunks}...`).start();
+      const chunkProgress = Math.round((i / chunks.length) * 100);
+      const spinner = UIHelpers.createProgressBar(
+        `Processing chunk ${chunkNumber}/${totalChunks} (${chunkProgress}%)...`,
+        { prefixText: '🎧' }
+      ).start();
 
       try {
         const audioBuffer = await this.generateSpeech(chunk, { voice, model, speed });
@@ -238,7 +243,8 @@ class TTSService {
         await fs.writeFile(filePath, audioBuffer);
         audioFiles.push(filePath);
 
-        spinner.succeed(`Chunk ${chunkNumber}/${totalChunks} completed`);
+        const completedProgress = Math.round((chunkNumber / totalChunks) * 100);
+        spinner.succeed(`✅ Chunk ${chunkNumber}/${totalChunks} completed (${completedProgress}%)`);
 
         if (onProgress) {
           onProgress({

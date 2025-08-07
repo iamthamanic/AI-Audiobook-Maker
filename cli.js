@@ -4,25 +4,13 @@ const { program } = require('commander');
 const chalk = require('chalk');
 const fs = require('fs-extra');
 const AudiobookMaker = require('./src/AudiobookMaker');
+const UIHelpers = require('./src/UIHelpers');
 
 async function main() {
-  console.log(
-    chalk.cyan(`
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║                🎧 AI AUDIOBOOK MAKER v5.0.2 🎧                ║
-║                                                               ║
-║            Transform PDFs & Text into Audiobooks             ║
-║              OpenAI TTS & Thorsten-Voice TTS                 ║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
-  `)
-  );
-
   program
     .name('aiabm')
     .description('AI Audiobook Maker - Convert PDFs and text files to audiobooks')
-    .version('5.0.2')
+    .version('5.0.3')
     .argument('[file]', 'Path to PDF or text file to convert')
     .option('-v, --voice <voice>', 'Voice to use (alloy, echo, fable, onyx, nova, shimmer)')
     .option('-s, --speed <speed>', 'Speech speed (0.25-4.0)', '1.0')
@@ -32,6 +20,11 @@ async function main() {
 
   const options = program.opts();
   const filePath = program.args[0];
+
+  // Show banner only in CLI mode (not interactive)
+  if (filePath) {
+    UIHelpers.showWelcomeBanner('5.0.3');
+  }
 
   try {
     const maker = new AudiobookMaker();

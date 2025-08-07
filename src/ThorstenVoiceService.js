@@ -185,6 +185,11 @@ print("TTS generation completed successfully")
   }
 
   async isAvailable() {
+    // Return cached result if we already checked
+    if (this.isInstalled && this.thorstenPath) {
+      return true;
+    }
+
     try {
       const installDir = path.join(os.homedir(), '.aiabm', 'thorsten-voice');
       
@@ -195,39 +200,43 @@ print("TTS generation completed successfully")
         return false;
       }
 
-      // Read installation info
-      try {
-        const installInfo = JSON.parse(await fs.readFile(installMarker, 'utf8'));
-        const installDate = new Date(installInfo.installedAt);
-        const daysSince = Math.floor((new Date() - installDate) / (1000 * 60 * 60 * 24));
-        console.log(chalk.gray(`   Installed: ${installInfo.version} (${daysSince} days ago)`));
-      } catch (error) {
-        // Ignore info reading errors
+      // Read installation info only once
+      if (!this.isInstalled) {
+        try {
+          const installInfo = JSON.parse(await fs.readFile(installMarker, 'utf8'));
+          const installDate = new Date(installInfo.installedAt);
+          const daysSince = Math.floor((new Date() - installDate) / (1000 * 60 * 60 * 24));
+          console.log(chalk.gray(`   Installed: ${installInfo.version} (${daysSince} days ago)`));
+        } catch (error) {
+          // Ignore info reading errors
+        }
+
+        const pythonCommand = await this.getPythonCommand();
+
+        try {
+          // Check if TTS is installed
+          const { stdout: ttsCheck } = await execAsync(`${pythonCommand} -c "import TTS; print('TTS available')"`, { timeout: 5000 });
+          console.log(chalk.gray(`   ${ttsCheck.trim()}`));
+
+          // Only check model download, don't initialize it
+          const { stdout: modelCheck } = await execAsync(
+            `${pythonCommand} -c "from TTS.utils.manage import ModelManager; mm = ModelManager(); models = mm.list_tts_models(); print('Thorsten model available' if '${this.modelName}' in str(models) else 'Model not found')"`,
+            { timeout: 5000 }
+          );
+          console.log(chalk.gray(`   ${modelCheck.trim()}`));
+
+          this.thorstenPath = installDir;
+          this.isInstalled = true;
+          console.log(chalk.green('✅ Thorsten-Voice is available'));
+          return true;
+        } catch (error) {
+          console.log(chalk.yellow(`⚠️  Thorsten-Voice check failed: ${error.message}`));
+          console.log(chalk.gray('   This may indicate a virtual environment or model issue'));
+          return false;
+        }
       }
 
-      const pythonCommand = await this.getPythonCommand();
-
-      try {
-        // Check if TTS is installed
-        const { stdout: ttsCheck } = await execAsync(`${pythonCommand} -c "import TTS; print('TTS available')"`, { timeout: 5000 });
-        console.log(chalk.gray(`   ${ttsCheck.trim()}`));
-
-        // Check if Thorsten model is available
-        const { stdout: modelCheck } = await execAsync(
-          `${pythonCommand} -c "from TTS.api import TTS; TTS('${this.modelName}'); print('Thorsten model available')"`,
-          { timeout: 15000 }
-        );
-        console.log(chalk.gray(`   ${modelCheck.trim()}`));
-
-        this.thorstenPath = installDir;
-        this.isInstalled = true;
-        console.log(chalk.green('✅ Thorsten-Voice is available'));
-        return true;
-      } catch (error) {
-        console.log(chalk.yellow(`⚠️  Thorsten-Voice check failed: ${error.message}`));
-        console.log(chalk.gray('   This may indicate a virtual environment or model issue'));
-        return false;
-      }
+      return this.isInstalled;
     } catch (error) {
       console.log(chalk.yellow('⚠️  Thorsten-Voice not found'));
       return false;

@@ -370,16 +370,23 @@ class VoicePreview {
       message: 'Output location:',
       choices: [
         { name: '📁 Desktop', value: path.join(os.homedir(), 'Desktop') },
-        { name: '🏠 Home folder', value: os.homedir() },
+        { name: '⬇️  Downloads', value: path.join(os.homedir(), 'Downloads') },
         { name: '📂 Documents', value: path.join(os.homedir(), 'Documents') },
         { name: '🎵 Music folder', value: path.join(os.homedir(), 'Music') },
         { name: '📋 Current directory', value: process.cwd() },
         { name: '✏️  Custom path...', value: 'custom' },
       ],
-      default: path.join(os.homedir(), 'Desktop'),
+      default: path.join(os.homedir(), 'Downloads'),
+    });
+    
+    promptFields.push({
+      type: 'confirm',
+      name: 'createSubfolder',
+      message: 'Create subfolder for this audiobook?',
+      default: true,
     });
 
-    const { speed, model, outputOptions, outputDirectory } = await inquirer.prompt(promptFields);
+    const { speed, model, outputOptions, outputDirectory, createSubfolder } = await inquirer.prompt(promptFields);
 
     // Handle custom path input
     let finalOutputDirectory = outputDirectory;
@@ -389,12 +396,22 @@ class VoicePreview {
           type: 'input',
           name: 'customPath',
           message: 'Enter custom output path:',
-          default: os.homedir(),
+          default: path.join(os.homedir(), 'Downloads'),
           validate: async (input) => {
             try {
-              const expandedPath = input.startsWith('~')
-                ? path.join(os.homedir(), input.slice(1))
-                : path.resolve(input);
+              // Handle relative paths better
+              let expandedPath = input;
+              if (input.startsWith('~')) {
+                expandedPath = path.join(os.homedir(), input.slice(1));
+              } else if (input === 'Downloads' || input === 'downloads') {
+                expandedPath = path.join(os.homedir(), 'Downloads');
+              } else if (input === 'Desktop' || input === 'desktop') {
+                expandedPath = path.join(os.homedir(), 'Desktop');
+              } else if (!path.isAbsolute(input)) {
+                expandedPath = path.join(os.homedir(), input);
+              } else {
+                expandedPath = path.resolve(input);
+              }
 
               await fs.ensureDir(expandedPath);
               return true;
@@ -405,9 +422,18 @@ class VoicePreview {
         },
       ]);
 
-      finalOutputDirectory = customPath.startsWith('~')
-        ? path.join(os.homedir(), customPath.slice(1))
-        : path.resolve(customPath);
+      // Handle special folder names
+      if (customPath === 'Downloads' || customPath === 'downloads') {
+        finalOutputDirectory = path.join(os.homedir(), 'Downloads');
+      } else if (customPath === 'Desktop' || customPath === 'desktop') {
+        finalOutputDirectory = path.join(os.homedir(), 'Desktop');
+      } else if (customPath.startsWith('~')) {
+        finalOutputDirectory = path.join(os.homedir(), customPath.slice(1));
+      } else if (!path.isAbsolute(customPath)) {
+        finalOutputDirectory = path.join(os.homedir(), customPath);
+      } else {
+        finalOutputDirectory = path.resolve(customPath);
+      }
     }
 
     return {
@@ -415,6 +441,7 @@ class VoicePreview {
       model,
       outputOptions,
       outputDirectory: finalOutputDirectory,
+      createSubfolder,
     };
   }
 }

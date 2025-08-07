@@ -4,6 +4,7 @@ const TTSService = require('./TTSService');
 const ThorstenVoiceService = require('./ThorstenVoiceService');
 const VoicePreview = require('./VoicePreview');
 const ProgressManager = require('./ProgressManager');
+const UIHelpers = require('./UIHelpers');
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const path = require('path');
@@ -55,6 +56,9 @@ class AudiobookMaker {
    * @throws {Error} When interactive mode fails
    */
   async runInteractive() {
+    // Show enhanced welcome banner
+    UIHelpers.showWelcomeBanner();
+
     // Check for resumable sessions first
     const resumeSession = await this.progressManager.showResumeDialog();
     if (resumeSession) {
@@ -68,22 +72,14 @@ class AudiobookMaker {
   async showMainMenu() {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      console.log(chalk.cyan('\n🎧 AI Audiobook Maker - Main Menu'));
-      console.log(chalk.gray('Use arrow keys to navigate, Enter to select\n'));
-
       const { action } = await inquirer.prompt([
         {
           type: 'list',
           name: 'action',
-          message: 'What would you like to do?',
-          choices: [
-            { name: '📖 Convert a file to audiobook', value: 'convert' },
-            { name: '🎤 Preview voices', value: 'preview' },
-            { name: '⚙️  Manage API key', value: 'config' },
-            { name: '📊 View session history', value: 'history' },
-            { name: '🧹 Clear cache', value: 'clear_cache' },
-            { name: '❌ Exit', value: 'exit' },
-          ],
+          message: chalk.cyan('\n🎧 Main Menu - What would you like to do?'),
+          choices: UIHelpers.getMainMenuChoices(),
+          pageSize: 8,
+          loop: false,
         },
       ]);
 
@@ -102,6 +98,11 @@ class AudiobookMaker {
           break;
         case 'clear_cache':
           await this.configManager.clearCache();
+          break;
+        case 'help':
+          UIHelpers.showHelpContent('general');
+          console.log(chalk.gray('Press any key to continue...'));
+          await inquirer.prompt([{ type: 'input', name: 'continue', message: '' }]);
           break;
         case 'exit':
           console.log(chalk.yellow('\n👋 Goodbye! Thank you for using AI Audiobook Maker! 🌟'));
@@ -139,15 +140,23 @@ class AudiobookMaker {
    */
   async processFile(filePath, cliOptions = {}) {
     try {
-      console.log(chalk.cyan('\n🔍 Analyzing file...'));
-
+      // Enhanced file analysis with progress
+      const analysisSpinner = UIHelpers.createProgressBar('🔍 Analyzing file...').start();
+      
       // Read and analyze file
       const fileData = await this.fileHandler.readFile(filePath);
       const chunks = this.fileHandler.splitTextIntoChunks(fileData.content);
       const costInfo = this.fileHandler.calculateCost(fileData.content);
+      
+      analysisSpinner.succeed('✅ File analysis completed');
 
-      // Display file info
-      this.displayFileInfo(fileData, costInfo, chunks.length);
+      // Enhanced file info display
+      fileData.fileName = path.basename(filePath);
+      UIHelpers.showProcessingInfo(fileData, { 
+        chunks: chunks.length, 
+        estimatedCost: `$${costInfo.estimatedCost.toFixed(3)}`,
+        estimatedTime: this.estimateProcessingTime(chunks.length)
+      });
 
       // Check for existing session
       const existingSession = await this.progressManager.findExistingSession(filePath);
@@ -296,18 +305,7 @@ class AudiobookMaker {
         type: 'list',
         name: 'provider',
         message: 'Select TTS Provider:',
-        choices: [
-          {
-            name: '🤖 OpenAI TTS (Cloud, premium quality)',
-            value: 'openai',
-            short: 'OpenAI TTS',
-          },
-          {
-            name: '🇩🇪 Thorsten-Voice (Local, native German)',
-            value: 'thorsten',
-            short: 'Thorsten-Voice',
-          },
-        ],
+        choices: UIHelpers.getProviderChoices().slice(0, 2), // Only first 2 choices (openai, thorsten)
         default: 'openai',
       },
     ]);
@@ -488,10 +486,18 @@ class AudiobookMaker {
    */
   async convertToAudio(session, chunks, fileData, settings) {
     const baseOutputDir = settings.outputDirectory || path.join(process.cwd(), 'audiobook_output');
-    const outputDir = path.join(
-      baseOutputDir,
-      `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`
-    );
+    
+    // Only create subfolder if user wants it
+    let outputDir;
+    if (settings.createSubfolder !== false) {
+      outputDir = path.join(
+        baseOutputDir,
+        `${path.basename(session.filePath, path.extname(session.filePath))}_${session.id}`
+      );
+    } else {
+      outputDir = baseOutputDir;
+    }
+    
     await fs.ensureDir(outputDir);
 
     await this.progressManager.updateProgress(session.id, { outputDir });
@@ -519,10 +525,13 @@ class AudiobookMaker {
 
       // Handle output options
       if (settings.outputOptions === 'single' || settings.outputOptions === 'both') {
-        const finalOutputPath = path.join(
-          outputDir,
-          `${path.basename(session.filePath, path.extname(session.filePath))}_audiobook.mp3`
-        );
+        // Create a clean filename
+        const baseFileName = path.basename(session.filePath, path.extname(session.filePath));
+        const audioFileName = settings.createSubfolder === false 
+          ? `${baseFileName}_audiobook.mp3`
+          : `${baseFileName}_audiobook.mp3`;
+        
+        const finalOutputPath = path.join(outputDir, audioFileName);
 
         console.log(chalk.cyan('\n🔗 Combining audio files...'));
         await this.ttsService.concatenateAudioFiles(audioFiles, finalOutputPath);
@@ -830,6 +839,23 @@ class AudiobookMaker {
     }
   }
 
+  /**
+   * Estimates processing time based on chunk count
+   */
+  estimateProcessingTime(chunkCount) {
+    const timePerChunk = 3; // seconds per chunk (average)
+    const totalSeconds = chunkCount * timePerChunk;
+    
+    if (totalSeconds < 60) {
+      return `~${totalSeconds} seconds`;
+    } else if (totalSeconds < 3600) {
+      return `~${Math.round(totalSeconds / 60)} minutes`;
+    } else {
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.round((totalSeconds % 3600) / 60);
+      return `~${hours}h ${minutes}m`;
+    }
+  }
 }
 
 module.exports = AudiobookMaker;
