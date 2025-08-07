@@ -113,22 +113,32 @@ class ThorstenVoiceService {
     try {
       await this.checkFfmpeg();
 
-      // If there's only one audio file, just copy it to the output path
+      // If there's only one audio file, convert it to MP3
       if (audioFiles.length === 1) {
-        console.log(chalk.gray('   Single audio file detected, copying directly...'));
-        await fs.copy(audioFiles[0], outputPath);
-        console.log(chalk.green('✅ Audio file copied successfully'));
+        console.log(chalk.gray('   Single audio file detected, converting WAV to MP3...'));
+        // Use ffmpeg to convert WAV to MP3
+        await execAsync(`ffmpeg -i "${audioFiles[0]}" -acodec libmp3lame -ab 192k "${outputPath}" -y`);
+        console.log(chalk.green('✅ Audio file converted successfully'));
         return outputPath;
       }
 
+      // For multiple files, first combine WAV files, then convert to MP3
+      const tempWavOutput = outputPath.replace(/\.mp3$/, '_temp.wav');
       const fileListPath = path.join(this.cachePath, 'file_list.txt');
       const fileListContent = audioFiles.map((file) => `file '${file}'`).join('\n');
       await fs.writeFile(fileListPath, fileListContent);
 
-      await execAsync(`ffmpeg -f concat -safe 0 -i "${fileListPath}" -c copy "${outputPath}"`);
+      // First combine WAV files
+      await execAsync(`ffmpeg -f concat -safe 0 -i "${fileListPath}" -c copy "${tempWavOutput}" -y`);
+      
+      // Then convert combined WAV to MP3
+      await execAsync(`ffmpeg -i "${tempWavOutput}" -acodec libmp3lame -ab 192k "${outputPath}" -y`);
+      
+      // Clean up
       await fs.remove(fileListPath);
+      await fs.remove(tempWavOutput);
 
-      console.log(chalk.green('✅ Audio files combined successfully'));
+      console.log(chalk.green('✅ Audio files combined and converted successfully'));
       return outputPath;
     } catch (error) {
       console.log(chalk.red(`❌ Error combining audio files: ${error.message}`));
