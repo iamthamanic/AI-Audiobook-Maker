@@ -10,7 +10,7 @@ class UIHelpers {
   /**
    * Creates an enhanced welcome banner with system info
    */
-  static showWelcomeBanner(version = '5.0.3') {
+  static showWelcomeBanner(version = '5.1.0') {
     console.clear();
     console.log(
       chalk.cyan(`

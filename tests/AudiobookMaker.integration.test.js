@@ -84,13 +84,14 @@ dass wir genügend Content für einen vollständigen Test haben.`;
       expect(maker.fileHandler).toBeInstanceOf(FileHandler);
     });
 
-    test('should initialize with custom cache directory', async () => {
-      const customCacheDir = path.join(testCacheDir, 'custom-cache');
-      const maker = new AudiobookMaker(customCacheDir);
+    test('should initialize with default cache directory', async () => {
+      const maker = new AudiobookMaker();
       
       await maker.initialize();
       
-      expect(maker.configManager.getCacheDir()).toBe(customCacheDir);
+      // The cache directory is set in ConfigManager
+      expect(maker.configManager.getCacheDir()).toBeTruthy();
+      expect(maker.configManager.getCacheDir()).toContain('.config/aiabm/cache');
     });
   });
 
@@ -121,19 +122,17 @@ dass wir genügend Content für einen vollständigen Test haben.`;
       expect(maker.configManager.promptForApiKey).toHaveBeenCalled();
     });
 
-    test('should initialize Fish Speech service when available', async () => {
+    test('should handle unknown TTS provider gracefully', async () => {
       const maker = new AudiobookMaker();
       await maker.initialize();
       
       try {
-        await maker.initializeServices('fishspeech');
-        
-        if (maker.currentService === 'fishspeech') {
-          expect(maker.fishSpeechService).toBeTruthy();
-        }
+        await maker.initializeServices('unknown');
+        // Should not get here
+        expect(true).toBe(false);
       } catch (error) {
-        // Fish Speech might not be available, that's OK
-        expect(error.message).toMatch(/Fish Speech|not available/i);
+        // Should throw error for unknown provider
+        expect(error.message).toMatch(/Unknown TTS provider/i);
       }
     });
 

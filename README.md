@@ -1,4 +1,4 @@
-# 🎧 AI Audiobook Maker (AIABM) v5.0.3
+# 🎧 AI Audiobook Maker (AIABM) v5.1.0
 
 [![npm version](https://img.shields.io/npm/v/aiabm.svg)](https://www.npmjs.com/package/aiabm)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,7 +6,7 @@
 
 Transform your PDFs and text files into high-quality audiobooks using **OpenAI TTS** (cloud) or **Thorsten-Voice** (native German). Choose between premium cloud voices or run everything locally at no cost!
 
-**🆕 New in v5.0:** Enhanced security, comprehensive testing, better error handling, and improved CLI experience.
+**🆕 New in v5.1:** Beautiful UI/UX overhaul, flexible output options, optimized Thorsten-Voice loading, and Downloads folder as default output.
 
 ## ✨ Features
 
